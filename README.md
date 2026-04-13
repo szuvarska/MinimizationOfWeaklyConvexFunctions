@@ -17,7 +17,13 @@ Task: Optimize weakly convex functions, implementing stochastic proximal-point-l
     poetry install
     ```
 
-4. Add packages to poetry using:
+4. Install pre-commit hooks
+
+    ```bash
+    poetry run pre-commit install
+    ```
+
+5. Add packages to poetry using:
 
     ```bash
     poetry add package-name
