@@ -20,7 +20,7 @@ Task: Optimize weakly convex functions, implementing stochastic proximal-point-l
 4. Install pre-commit hooks
 
     ```bash
-    poetry run pre-commit install --install-hooks
+    poetry run pre-commit install --hook-type commit-msg
     ```
 
 5. Add packages to poetry using:
