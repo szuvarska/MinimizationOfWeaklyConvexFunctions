@@ -2,6 +2,10 @@
 
 Task: Optimize weakly convex functions, implementing stochastic proximal-point-like steps and theoretically tracking the convergence of the gradient of the Moreau envelope.
 
+## Literature
+
+Davis, D., & Drusvyatskiy, D. (2019). Stochastic model-based minimization of weakly convex functions. SIAM Journal on Optimization, 29(1), 207-239.
+
 ## Environment setup
 
 1. Make sure you have conda cli installed on your machine
