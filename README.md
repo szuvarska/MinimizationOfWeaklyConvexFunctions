@@ -12,7 +12,7 @@ Davis, D., & Drusvyatskiy, D. (2019). Stochastic model-based minimization of wea
 2. Create conda environment:
 
     ```bash
-    conda create -n minimization-of-weakly-convex-functions python=3.13 poetry
+    conda create -n minimization-of-weakly-convex-functions python=3.13 poetry=2.4.1
     ```
 
 3. Setup poetry:
