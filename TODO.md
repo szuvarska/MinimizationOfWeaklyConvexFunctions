@@ -8,8 +8,8 @@ Reproduce the experiments from Davis & Drusvyatskiy (2019) — comparing three s
 
 ## 1. Fix Existing Bugs
 
-- [ ] Remove duplicate `population_data[:, 1] += 4.0` line in notebooks 05 and 06
-- [ ] Fix `solve_exact` to handle full mini-batch (currently only uses `batch[0]`)
+- [x] Remove duplicate `population_data[:, 1] += 4.0` line in notebooks 05 and 06
+- [x] Fix `solve_exact` to handle full mini-batch (currently only uses `batch[0]`)
 
 ## 2. Implement the Three Methods from the Paper
 
@@ -25,8 +25,8 @@ All three solve: `x_{t+1} = argmin { model(x) + r(x) + (β_t/2)||x - x_t||² }`
 
 ## 3. Implement Convergence Tracking
 
-- [ ] Track **Moreau envelope gradient norm** `||∇φ_λ(x)||` — the paper's main convergence measure
-- [ ] Track function value gap `φ(x_t) - φ(x*)`
+- [x] Track **Moreau envelope gradient norm** `||∇φ_λ(x)||` — the paper's main convergence measure
+- [x] Track function value gap `φ(x_t) - φ(x*)`
 - [ ] Track distance to true solution `||x_t - x̄||`
 
 ## 4. Experiment 1: Phase Retrieval (Section 5.1)
