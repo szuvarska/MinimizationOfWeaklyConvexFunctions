@@ -58,8 +58,8 @@ class BlindDeconvSubgradient(WeaklyConvexProblem):
             # ∂g = sign * (<v,y>u, <u,x>v)
             grad_x = sign * vy * u
             grad_y = sign * ux * v
-            grad_sum[:self.d1] += grad_x
-            grad_sum[self.d1:] += grad_y
+            grad_sum[: self.d1] += grad_x
+            grad_sum[self.d1 :] += grad_y
 
         grad_avg = grad_sum / batch.shape[0]
         return z_t - lam * grad_avg
@@ -155,7 +155,7 @@ class BlindDeconvProximalPoint(WeaklyConvexProblem):
         candidates = []
 
         # Case 1: <u,x><v,y> ≠ b → eq (5.6), ± sign
-        denom = 1.0 - lam ** 2 * norm_u_sq * norm_v_sq
+        denom = 1.0 - lam**2 * norm_u_sq * norm_v_sq
         if abs(denom.item()) > 1e-9:
             for sign in [1.0, -1.0]:
                 num_x = sign * vy0 - lam * norm_v_sq * ux0
@@ -181,7 +181,7 @@ class BlindDeconvProximalPoint(WeaklyConvexProblem):
             eta = float(root.real)
             if abs(b.item()) < 1e-12:
                 continue
-            gamma_val = (eta * ux0.item() - eta ** 2) / (b.item() * norm_u_sq.item())
+            gamma_val = (eta * ux0.item() - eta**2) / (b.item() * norm_u_sq.item())
             delta = eta  # δ = <v,y> = b/η when b ≠ 0... Actually δ = b/η
             if abs(eta) < 1e-12:
                 continue
@@ -196,10 +196,9 @@ class BlindDeconvProximalPoint(WeaklyConvexProblem):
         for z_cand in candidates:
             x_c = z_cand[: self.d1]
             y_c = z_cand[self.d1 :]
-            obj = (
-                torch.abs(torch.dot(u, x_c) * torch.dot(v, y_c) - b)
-                + (beta_t / 2) * (torch.norm(x_c - x0) ** 2 + torch.norm(y_c - y0) ** 2)
-            )
+            obj = torch.abs(torch.dot(u, x_c) * torch.dot(v, y_c) - b) + (
+                beta_t / 2
+            ) * (torch.norm(x_c - x0) ** 2 + torch.norm(y_c - y0) ** 2)
             if obj.item() < best_val:
                 best_val = obj.item()
                 best_z = z_cand

@@ -40,11 +40,21 @@ def run_model_based(method_cls, data, d, beta, n_epochs, m, seed):
     T = n_epochs * m
     prob = method_cls(rho=2.0)
     solver = ModelBasedSolver(
-        problem=prob, data=data, x_init=x_init,
-        T=T, batch_size=1, beta=beta, log_every=m, verbose=False,
+        problem=prob,
+        data=data,
+        x_init=x_init,
+        T=T,
+        batch_size=1,
+        beta=beta,
+        log_every=m,
+        verbose=False,
     )
     solver.run()
-    return solver.history["obj_values"][-1] if solver.history["obj_values"] else float("inf")
+    return (
+        solver.history["obj_values"][-1]
+        if solver.history["obj_values"]
+        else float("inf")
+    )
 
 
 def run_torch_optimizer(opt_class, data, d, lr, n_epochs, m, seed, **opt_kwargs):
@@ -124,7 +134,9 @@ def run_comparison(d, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=4
         for si, lr in enumerate(lrs):
             objs = []
             for r in range(n_rounds):
-                obj = run_torch_optimizer(opt_cls, data, d, lr, n_epochs, m, seed=r, **kwargs)
+                obj = run_torch_optimizer(
+                    opt_cls, data, d, lr, n_epochs, m, seed=r, **kwargs
+                )
                 objs.append(obj)
             vals[si] = np.mean(objs)
         results[name] = vals
@@ -150,7 +162,9 @@ def plot_comparison(d, m, lrs, results, initial_error, save_dir):
     for name in model_names + opt_names:
         ax.plot(lrs, results[name], label=name, linewidth=1.5, **styles[name])
 
-    ax.axhline(y=initial_error, color="gray", linestyle=":", alpha=0.5, label="Initial error")
+    ax.axhline(
+        y=initial_error, color="gray", linestyle=":", alpha=0.5, label="Initial error"
+    )
     ax.set_xlabel("Step-size parameter")
     ax.set_ylabel("Function value after 100 epochs")
     ax.set_title(f"Model-based vs Standard Optimizers — (d, m) = ({d}, {m})")

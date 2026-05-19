@@ -69,7 +69,11 @@ def run_single(prob, data, d_total, beta, n_epochs, m, seed):
     )
     solver.run()
 
-    final_obj = solver.history["obj_values"][-1] if solver.history["obj_values"] else float("inf")
+    final_obj = (
+        solver.history["obj_values"][-1]
+        if solver.history["obj_values"]
+        else float("inf")
+    )
 
     epoch_to_target = None
     for idx, obj in enumerate(solver.history["obj_values"]):
@@ -127,13 +131,17 @@ def run_config(d1, d2, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=
     return inv_betas, final_objs, epochs_to_target
 
 
-def plot_config(d1, d2, m, inv_betas, final_objs, epochs_to_target, initial_error, save_dir):
+def plot_config(
+    d1, d2, m, inv_betas, final_objs, epochs_to_target, initial_error, save_dir
+):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
     for name, objs in final_objs.items():
         ax1.plot(inv_betas, objs, label=name, linewidth=1.5)
 
-    ax1.axhline(y=initial_error, color="blue", linestyle="--", alpha=0.5, label="Initial error")
+    ax1.axhline(
+        y=initial_error, color="blue", linestyle="--", alpha=0.5, label="Initial error"
+    )
     ax1.set_xlabel(r"$\beta^{-1}$")
     ax1.set_ylabel("Function value after 100 epochs")
     ax1.set_title(f"$(d_1, d_2, m) = ({d1}, {d2}, {m})$")
@@ -178,7 +186,9 @@ def main():
         z0 = z0 / torch.norm(z0)
         initial_error = prob.population_objective(z0, data)
 
-        plot_config(d1, d2, m, inv_betas, final_objs, epochs_to_target, initial_error, save_dir)
+        plot_config(
+            d1, d2, m, inv_betas, final_objs, epochs_to_target, initial_error, save_dir
+        )
 
     print("\nAll blind deconvolution experiments complete.")
 
