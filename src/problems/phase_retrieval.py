@@ -35,7 +35,7 @@ class SubgradientPhaseRetrieval(WeaklyConvexProblem):
             a = a_all[i]
             b = b_all[i]
             dot_prod = torch.dot(a, x_t)
-            residual = dot_prod ** 2 - b
+            residual = dot_prod**2 - b
             sign = torch.sign(residual) if residual.abs() > 1e-12 else torch.tensor(0.0)
             grad_sum += 2 * dot_prod * sign * a
 
@@ -73,7 +73,7 @@ class ProxLinearPhaseRetrieval(WeaklyConvexProblem):
             b = b_all[i]
 
             dot_prod = torch.dot(a, x_t)
-            gamma = dot_prod ** 2 - b
+            gamma = dot_prod**2 - b
             zeta = 2 * dot_prod * a
 
             norm_zeta_sq = torch.norm(zeta) ** 2
@@ -157,7 +157,10 @@ class ProximalPointPhaseRetrieval(WeaklyConvexProblem):
         best_y = None
         best_val = float("inf")
         for y in candidates:
-            val = torch.abs(torch.dot(a, y) ** 2 - b) + (beta_t / 2) * torch.norm(y - x) ** 2
+            val = (
+                torch.abs(torch.dot(a, y) ** 2 - b)
+                + (beta_t / 2) * torch.norm(y - x) ** 2
+            )
             if val.item() < best_val:
                 best_val = val.item()
                 best_y = y

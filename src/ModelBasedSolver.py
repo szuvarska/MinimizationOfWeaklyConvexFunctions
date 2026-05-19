@@ -23,6 +23,8 @@ class ModelBasedSolver:
         beta=None,
         log_every=50,
         moreau_every=None,
+        verbose=True,
+        true_solution=None,
     ):
         self.prob = problem
         self.data = data
@@ -31,6 +33,8 @@ class ModelBasedSolver:
         self.batch_size = batch_size
         self.log_every = log_every
         self.moreau_every = moreau_every
+        self.verbose = verbose
+        self.true_solution = true_solution
 
         # β must satisfy β > ρ (paper: β > ρ̄ > τ+η).
         # Default: β = 2ρ + 1, safely above ρ.
@@ -45,6 +49,7 @@ class ModelBasedSolver:
             "obj_values": [],
             "moreau_grad_norms": [],
             "x_norms": [],
+            "dist_to_solution": [],
         }
 
     def run(self):
@@ -88,11 +93,19 @@ class ModelBasedSolver:
                 self.history["obj_values"].append(obj_val)
                 self.history["x_norms"].append(x_norm)
 
+                if self.true_solution is not None:
+                    dist = torch.norm(self.x - self.true_solution).item()
+                    self.history["dist_to_solution"].append(dist)
+
                 # Moreau envelope gradient norm (expensive, compute less often)
                 if self.moreau_every and t % self.moreau_every == 0:
                     moreau_gn = self.prob.compute_moreau_grad_norm(self.x, self.data)
                     self.history["moreau_grad_norms"].append((t, moreau_gn))
 
-                print(f"Iter {t:4d}: ||x|| = {x_norm:.4f} | " f"phi(x) = {obj_val:.6f}")
+                if self.verbose:
+                    print(
+                        f"Iter {t:4d}: ||x|| = {x_norm:.4f} | "
+                        f"phi(x) = {obj_val:.6f}"
+                    )
 
         return self.x
