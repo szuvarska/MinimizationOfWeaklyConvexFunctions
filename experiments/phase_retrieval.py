@@ -58,7 +58,11 @@ def run_single(prob, data, d, beta, n_epochs, m, seed):
     )
     solver.run()
 
-    final_obj = solver.history["obj_values"][-1] if solver.history["obj_values"] else float("inf")
+    final_obj = (
+        solver.history["obj_values"][-1]
+        if solver.history["obj_values"]
+        else float("inf")
+    )
 
     # Find first epoch where objective < target
     epoch_to_target = None
@@ -125,7 +129,9 @@ def plot_config(d, m, inv_betas, final_objs, epochs_to_target, initial_error, sa
     for name, objs in final_objs.items():
         ax1.plot(inv_betas, objs, label=name, linewidth=1.5)
 
-    ax1.axhline(y=initial_error, color="blue", linestyle="--", alpha=0.5, label="Initial error")
+    ax1.axhline(
+        y=initial_error, color="blue", linestyle="--", alpha=0.5, label="Initial error"
+    )
     ax1.set_xlabel(r"$\beta^{-1}$")
     ax1.set_ylabel("Function value after 100 epochs")
     ax1.set_title(f"(d, m) = ({d}, {m})")
@@ -171,7 +177,9 @@ def main():
         x0 = x0 / torch.norm(x0)
         initial_error = prob.population_objective(x0, data)
 
-        plot_config(d, m, inv_betas, final_objs, epochs_to_target, initial_error, save_dir)
+        plot_config(
+            d, m, inv_betas, final_objs, epochs_to_target, initial_error, save_dir
+        )
 
     print("\nAll phase retrieval experiments complete.")
 
