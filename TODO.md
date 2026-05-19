@@ -15,11 +15,11 @@ Reproduce the experiments from Davis & Drusvyatskiy (2019) — comparing three s
 
 All three solve: `x_{t+1} = argmin { model(x) + r(x) + (β_t/2)||x - x_t||² }`
 
-- [ ] **Stochastic subgradient** (model 1.4): `f_x(y,ξ) = f(x) + <G(x,ξ), y-x>`
-- [ ] **Stochastic prox-linear** (model 1.5): `f_x(y,ξ) = h(c(x,ξ) + ∇c(x,ξ)(y-x), ξ)`
+- [x] **Stochastic subgradient** (model 1.4): `f_x(y,ξ) = f(x) + <G(x,ξ), y-x>`
+- [x] **Stochastic prox-linear** (model 1.5): `f_x(y,ξ) = h(c(x,ξ) + ∇c(x,ξ)(y-x), ξ)`
   - Closed-form for phase retrieval: eq. (5.2)
   - Closed-form for blind deconvolution: same formula with ζ = λ(<v,y>u, <u,x>v)
-- [ ] **Stochastic proximal point** (model 1.6): `f_x(y,ξ) = h(c(y,ξ))`
+- [x] **Stochastic proximal point** (model 1.6): `f_x(y,ξ) = h(c(y,ξ))`
   - Closed-form for phase retrieval: eq. (5.3)-(5.4), enumerate 4 candidate solutions
   - Closed-form for blind deconvolution: eq. (5.5)-(5.6), solve quartic
 
