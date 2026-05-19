@@ -27,7 +27,7 @@ All three solve: `x_{t+1} = argmin { model(x) + r(x) + (β_t/2)||x - x_t||² }`
 
 - [x] Track **Moreau envelope gradient norm** `||∇φ_λ(x)||` — the paper's main convergence measure
 - [x] Track function value gap `φ(x_t) - φ(x*)`
-- [ ] Track distance to true solution `||x_t - x̄||`
+- [x] Track distance to true solution `||x_t - x̄||`
 
 ## 4. Experiment 1: Phase Retrieval (Section 5.1)
 
@@ -40,15 +40,17 @@ Setup:
 
 Configurations (same as paper):
 
-- [ ] (d, m) = (10, 30)
-- [ ] (d, m) = (50, 150)
-- [ ] (d, m) = (100, 300)
+- [x] (d, m) = (10, 30)
+- [x] (d, m) = (50, 150)
+- [x] (d, m) = (100, 300)
 
 For each config:
 
-- [ ] Run all 3 methods with 100 equally spaced step-sizes β_t⁻¹ ∈ [10⁻⁴, 1]
-- [ ] Plot function gap after 100 passes through data (averaged over 15 rounds)
-- [ ] Plot epochs to reach 10⁻⁴ functional suboptimality (prox-linear & prox-point)
+- [x] Run all 3 methods with 100 equally spaced step-sizes β_t⁻¹ ∈ [10⁻⁴, 1]
+- [x] Plot function gap after 100 passes through data (averaged over 15 rounds)
+- [x] Plot epochs to reach 10⁻⁴ functional suboptimality (prox-linear & prox-point)
+
+Script: `experiments/phase_retrieval.py` (smoke-tested, ready to run full)
 
 ## 5. Experiment 2: Blind Deconvolution (Section 5.2)
 
@@ -61,24 +63,28 @@ Setup:
 
 Configurations (same as paper):
 
-- [ ] (d1, d2, m) = (10, 10, 30)
-- [ ] (d1, d2, m) = (50, 50, 200)
-- [ ] (d1, d2, m) = (100, 100, 400)
+- [x] (d1, d2, m) = (10, 10, 30)
+- [x] (d1, d2, m) = (50, 50, 200)
+- [x] (d1, d2, m) = (100, 100, 400)
 
 For each config:
 
-- [ ] Same plots as phase retrieval experiment
+- [x] Same plots as phase retrieval experiment
+
+Script: `experiments/blind_deconvolution.py` (smoke-tested, ready to run full)
 
 ## 6. Additional Comparison with Standard Optimizers
 
-- [ ] Implement SGD baseline (torch.optim.SGD on same loss with autograd)
-- [ ] Implement Adam baseline (torch.optim.Adam)
-- [ ] Implement AdaGrad baseline (torch.optim.Adagrad)
-- [ ] Compare convergence curves: model-based methods vs standard optimizers
-- [ ] Show step-size sensitivity advantage of prox-linear/prox-point
+- [x] Implement SGD baseline (torch.optim.SGD on same loss with autograd)
+- [x] Implement Adam baseline (torch.optim.Adam)
+- [x] Implement AdaGrad baseline (torch.optim.Adagrad)
+- [x] Compare convergence curves: model-based methods vs standard optimizers
+- [x] Show step-size sensitivity advantage of prox-linear/prox-point
+
+Script: `experiments/optimizer_comparison.py` (smoke-tested, ready to run full)
 
 ## 7. Deliverables
 
-- [ ] Clean experiment scripts in `experiments/`
-- [ ] Final plots reproducing paper's Figure 3 and Figure 4
+- [x] Clean experiment scripts in `experiments/`
+- [ ] Run full experiments and generate final plots (Figure 3, Figure 4, optimizer comparison)
 - [ ] Presentation/report in `deliverables/`
