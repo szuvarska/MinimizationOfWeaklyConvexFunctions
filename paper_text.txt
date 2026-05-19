@@ -1,0 +1,1888 @@
+================================================================================
+PAPER: Stochastic Model-Based Minimization of Weakly Convex Functions
+AUTHORS: Damek Davis, Dmitriy Drusvyatskiy
+SOURCE: SIAM Journal on Optimization, 29(1), 207-239, 2019
+TOTAL PAGES: 33
+================================================================================
+
+--- PAGE 1 ---
+STOCHASTIC MODEL-BASED MINIMIZATION OF WEAKLY
+CONVEX FUNCTIONS∗
+DAMEK DAVIS† AND DMITRIY DRUSVYATSKIY‡
+Abstract. We consider a family of algorithms that successively sample and minimize simple
+stochasticmodelsoftheobjectivefunction. Weshowthatunderreasonableconditionsonapproxi-
+mationqualityandregularityofthemodels,anysuchalgorithmdrivesanaturalstationaritymeasure
+to zero at the rate O(k−1/4). As a consequence, we obtain the first complexity guarantees for the
+stochastic proximal point, proximal subgradient, and regularized Gauss-Newton methods for mini-
+mizing compositions of convex functions with smooth maps. The guiding principle, underlying the
+complexityguarantees,isthatallalgorithmsunderconsiderationcanbeinterpretedasapproximate
+descentmethodsonanimplicitsmoothingoftheproblem,givenbytheMoreauenvelope. Specializ-
+ingtoclassicalcircumstances,weobtainthelong-soughtconvergencerateofthestochasticprojected
+gradientmethod,withoutbatching,forminimizingasmoothfunctiononaclosedconvexset.
+Key words. stochastic,subgradient,proximal,prox-linear,Moreauenvelope,weaklyconvex
+AMS subject classifications. 65K05,65K10,90C15,90C30
+1. Introduction. Stochastic optimization plays a central role in the statistical
+sciences, underlying all aspects of learning from data. The goal of stochastic opti-
+mization in data science is to learn a decision rule from a limited data sample, which
+generalizes well to the entire population. Learning such a decision rule amounts to
+minimizing the regularized population risk:
+(SO) min ϕ(x)=f(x)+r(x) where f(x)=E [f(x,ξ)].
+ξ∼P
+x∈Rd
+Here, ξ encodes the population data, which is assumed to follow some fixed but
+unknownprobabilitydistributionP. Thefunctionsf andrplayqualitativelydifferent
+roles. Typically, f(x,ξ) evaluates the loss of the decision rule parametrized by x on
+a data point ξ. In contrast, the function r: Rd → R∪{+∞} models constraints on
+the parameters x or encourages x to have some low dimensional structure, such as
+sparsityorlowrank. WithinaBayesianframework, theregularizerr canmodelprior
+distributional information on x.
+Robbins-Monro’s pioneering 1951 work [54] gave the first procedure for solving
+(SO) in the setting when f(·,ξ) are smooth and strongly convex and r = 0, thereby
+inspiringdecadesoffurtherresearch. Amongsuchalgorithms,theproximalstochastic
+(sub)gradientmethodisthemostsuccessfulandwidelyusedinpractice. Thismethod
+constructs a sequence of approximations x of the minimizer of (SO) by iterating:
+t
+(cid:40) (cid:41)
+Sample ξ ∼P
+t
+(SG) ,
+Set x =prox (x −α ∇ f(x ,ξ ))
+t+1 αtr t t x t t
+∗SubmittedtotheeditorsMarch29,2018. Theresultsinthispaperareacombinationofthetwo
+arXivpreprints[21,22].
+Funding: ResearchofDrusvyatskiywassupportedbytheAFOSRYIPawardFA9550-15-1-0237
+andbytheNSFDMS1651851andCCF1740551awards.
+†School of Operations Research and Information Engineering, Cornell University, Ithaca, NY
+14850,USA(dsd95@cornell.edu,people.orie.cornell.edu/dsd95).
+‡Department of Mathematics, University of Washington, Seattle, WA 98195 (ddrusv@uw.edu,
+www.math.washington.edu/∼ddrusv).
+1
+8102
+guA
+62
+]CO.htam[
+3v32560.3081:viXra
+
+--- PAGE 2 ---
+2 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+where α >0 is an appropriate control sequence and prox (·) is the proximal map
+t αr
+prox (x):=argmin (cid:8) r(y)+ 1 (cid:107)y−x(cid:107)2(cid:9) .
+αr 2α
+y
+Thus, in each iteration, the method travels from x in the direction opposite to a
+t
+sampled gradient ∇ f(x ,ξ ), followed by a proximal operation.
+x t t
+Nonsmoothconvexproblemsmaybesimilarlyoptimizedbyreplacingsamplegra-
+dients by sample subgradients v ∈ ∂ f(x ,ξ ), where ∂ f(x,ξ) is the subdifferential
+t x t t x
+inthesenseofconvexanalysis[59]. Evenmorebroadly,whenf(·,ξ)isneithersmooth
+norconvex,thesymbol∂ f(·,ξ)mayrefertoageneralizedsubdifferential. Theformal
+x
+definitionof thesubdifferentialappearsin Section2, andis standardinthe optimiza-
+tion literature (e.g. [58, Definition 8.3]). The reader should keep in mind that in
+practice, the functions f(·,ξ ) are often all differentiable along the iterate sequence
+t
+{x }. Thereforefromtheviewpointofimplementation, onealwayscomputesthetrue
+t
+gradients of the sampled functions, using conventional means. On the other hand,
+the nonsmoothness cannot be ignored in the analysis, since (i) the gradients do not
+vary continuously and (ii) the objective function is can be nonsmooth at every limit
+point of the process. We will expand on these two observations shortly.
+Performance of stochastic optimization methods is best judged by their sample
+complexity – the number of i.i.d. realizations ξ ,...,ξ ∼ P needed to reach a de-
+1 N
+sired accuracy of the decision rule. Classical results [45] stipulate that for convex
+problems, it suffices to generate O(ε−2) samples to reach functional accuracy ε in
+expectation, and this complexity is unimprovable without making stronger assump-
+tions. Forsmoothproblems,thestochasticgradientmethodhassamplecomplexityof
+O(ε−4) to reach a point with the gradient norm at most ε in expectation [35,36,67].
+Despite the ubiquity of the stochastic subgradient method in applications, its
+sample complexity is not yet known for any reasonably wide class of problems be-
+yondthosethataresmoothorconvex. Thisissomewhatconcerningasthestochastic
+subgradient method is the simplest and most widely-used optimization algorithm for
+large-scale problems arising in machine learning and is the core optimization subrou-
+tine in industry backed software libraries, such as Google’s TensorFlow [1].
+The purpose of this work is to provide the first sample complexity bounds for a
+numberofpopularstochasticalgorithmsonareasonablybroadclassofnonsmoothand
+nonconvex optimization problems. The problem class we consider captures a variety
+of important computational tasks in data science, as we illustrate below, while the
+algorithms we analyze include the proximal stochastic subgradient, proximal point,
+and regularized Gauss-Newton methods. Before stating the complexity guarantees,
+we must first explain the “stationarity measure” that we will use to judge the quality
+of the iterates. It is this stationarity measure that tends to zero at a controlled rate.
+Thesearchforstationarypoints. Convexoptimizationalgorithmsarejudged
+by the rate at which they decrease the function value along the iterate sequence.
+Analysis of smooth optimization algorithms focuses instead on the magnitude of the
+gradients along the iterates. The situation becomes quite different for problems that
+are neither smooth nor convex.
+Asinthesmoothsetting,theprimarygoalofnonsmoothnonconvexoptimization
+isthesearchforstationarypoints. Apointx∈Rd iscalledstationaryfortheproblem
+(SO)iftheinclusion0∈∂ϕ(x)holds. In“primalterms”,thesearepreciselythepoints
+where the directional derivative of ϕ is nonnegative in every direction. Indeed, under
+
+--- PAGE 3 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 3
+mild conditions on ϕ, equality holds [58, Proposition 8.32]:
+dist(0;∂ϕ(x))=− inf ϕ(cid:48)(x;v).
+v:(cid:107)v(cid:107)≤1
+Thus a point x, satisfying dist(0;∂ϕ(x)) ≤ ε, approximately satisfies first-order nec-
+essary conditions for optimality.
+Animmediatedifficultyinanalyzingstochasticmethodsfor nonsmooth andnon-
+convex problems is that it is not a priori clear how to measure the progress of the
+algorithm. Neither the functional suboptimality gap, ϕ(x )−minϕ, nor the station-
+t
+arity measure, dist(0;∂ϕ(x )), necessarily tend to zero along the iterate sequence.
+t
+This difficulty persists even in the simplest setting of minimizing a smooth function
+on a closed convex set by the stochastic projected gradient method. Indeed, what
+is missing is a continuous measure of stationarity to monitor, instead of the highly
+discontinuous function x(cid:55)→dist(0;∂ϕ(x)).
+Weak convexity and the Moreau envelope. Inthiswork,wefocusonaclass
+ofproblemsthatnaturallyadmitacontinuousmeasureofstationarity. Wesaythata
+function g: Rd →R is ρ-weakly convex if the assignment x(cid:55)→g(x)+ρ(cid:107)x(cid:107)2 is convex.
+2
+The class of weakly convex functions, first introduced in English in [50], is broad. It
+includesallconvexfunctionsandsmoothfunctionswithLipschitzcontinuousgradient.
+More generally, any function of the form
+g(x)=h(c(x)),
+with h convex and Lipschitz and c a smooth map with Lipschitz Jacobian, is weakly
+convex [29, Lemma 4.2]. Notice that such composite functions need not be smooth
+nor convex; instead, the composite function class nicely interpolates between the
+smooth and convex settings. Classical literature highlights the importance of weak
+convexity in optimization [51,52,56], while recent advances in statistical learning
+and signal processing have further reinvigorated the problem class. Nonlinear least
+squares, phase retrieval [23,30,34], minimization of the Conditional Value-at-Risk [7,
+8,60],graphsynchronization[2,6,63],covarianceestimation[17],androbustprincipal
+componentanalysis[11,14]naturallyleadtoweaklyconvexformulations. Forarecent
+discussion on the role of weak convexity in large-scale optimization, see e.g., [26].
+IthasbeenknownsinceNurminskii’swork[49,50]thatwhenthefunctionsf(·,ξ)
+are ρ-weakly convex and r =0, the stochastic subgradient method on (SO) generates
+an iterate sequence that subsequentially converges to a stationary point of the prob-
+lem,almostsurely. Nonetheless,thesamplecomplexityofthebasicmethodandofits
+proximal extension, has remained elusive. Our approach to resolving this open ques-
+tion relies on an elementary observation: weakly convex problems naturally admit a
+continuousmeasureofstationaritythroughimplicitsmoothing. Thekeyconstruction
+we use is the Moreau envelope [43]:
+ϕ (x):=min (cid:8) ϕ(y)+ 1 (cid:107)y−x(cid:107)2(cid:9) ,
+λ y 2λ
+where λ > 0. Standard results (e.g. [43], [55, Theorem 31.5]) show that as long as
+ϕ is ρ-weakly convex and λ < ρ−1, the envelope ϕ is C1-smooth with the gradient
+λ
+given by
+∇ϕ (x)=λ−1(x−prox (x)).
+λ λϕ
+
+--- PAGE 4 ---
+4 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+xˆ
+3
+2.5
+λ(cid:107)∇ϕ (x)(cid:107)
+λ
+2
+1.5
+x
+1
+∇ϕ (x)∈∂ϕ(xˆ)
+0.5 λ
+0
+-2 -1.5 -1 -0.5 0 0.5 1 1.5 2
+(a) Moreau envelope of ϕ(x)=|x2−1| (b) Approximate stationarity
+Fig. 1: An illustration of the Moreau envelope
+See Figure 1a for an illustration.
+When f is C1-smooth with β-Lipschitz gradient and there is no regularizer r,
+thenorm(cid:107)∇ϕ (x)(cid:107)isproportionaltothemagnitudeofthetruegradient(cid:107)∇f(x)(cid:107).
+1/β
+More generally, when f is C1-smooth and r is nonzero, the norm (cid:107)∇ϕ (x)(cid:107) is
+1/β
+proportional to the size of the proximal gradient step, commonly used to measure
+convergence in additive composite minimization [47]. See the end of Section 2.2 for
+a precise statement. In the broader nonsmooth setting, the norm of the gradient
+(cid:107)∇ϕ (x)(cid:107) has an intuitive interpretation in terms of near-stationarity for the target
+λ
+problem min ϕ(x). Namely, the definition of the Moreau envelope directly implies
+x
+that for any point x∈Rd, the proximal point xˆ:=prox (x) satisfies
+λϕ
+
+(cid:107)xˆ−x(cid:107) =λ(cid:107)∇ϕ (x)(cid:107),
+ λ
+ϕ(xˆ) ≤ϕ(x),
+ dist(0;∂ϕ(xˆ)) ≤(cid:107)∇ϕ (x)(cid:107).
+λ
+Thus a small gradient (cid:107)∇ϕ (x)(cid:107) implies that x is near some point xˆ that is nearly
+λ
+stationaryforϕ;seeFigure1b. Inthelanguageofnumericalanalysis,onecaninterpret
+algorithmsthatdrivethegradientoftheMoreauenvelopetozeroasbeing“backward-
+stable”. For a longer discussion of the near-stationarity concept, we refer to reader
+to [26] or [29, Section 4.1].
+Contributions. In this paper, we show that as long as the functions f(·,ξ)+
+r(·) are ρ-weakly convex and mild Lipschitz conditions hold, the proximal stochastic
+subgradient method will generate a point x satisfying E(cid:107)∇ϕ (x)(cid:107) ≤ ε after at
+1/(2ρ)
+mostO(ε−4)iterations. Thisisperhapssurprising,sinceneithertheMoreauenvelope
+northeproximalmapofϕexplicitlyappearinthedefinitionofthestochasticproximal
+subgradient method. This work appears to be the first to recognize the Moreau
+envelope as a useful potential function for analyzing subgradient methods.
+Indeed,wewillshowthattheworst-casecomplexityO(ε−4)holdsforamuchwider
+familyofalgorithmsthanthestochasticsubgradientmethod. Settingthestage,recall
+thatthestochasticsubgradientmethodreliesonsamplingsubgradientestimatesoff,
+or equivalently sampling good linear models of the function. More broadly, suppose
+that f is an arbitrary function (not necessarily written as an expectation), and for
+every point x we have available a family of “models” {f (·,ξ)} , indexed by a
+x ξ∼P
+random element ξ ∼P. The oracle concept we use assumes that the only access to f
+
+--- PAGE 5 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 5
+is by sampling a model f (·,ξ) centered around any base point x. Naturally, to make
+x
+use of such models we must have some control on their approximation quality. We
+will call the assignment (x,y,ξ)(cid:55)→f (y,ξ) a stochastic one-sided model if it satisfies
+x
+τ
+(1.1) E [f (x,ξ)]=f(x) and E [f (y,ξ)−f(y)]≤ (cid:107)y−x(cid:107)2 ∀x,y,
+ξ x ξ x 2 2
+Thusineachexpectation,eachmodelf (·,ξ)shouldlowerboundf uptoaquadratic
+x
+error, while agreeing with f at the basepoint x. See Figure 2 for an illustration.
+f
+f+(x−0.5)2
+f
+x
+f
+x
+0.5 0.5
+Fig.2: Illustrationofadeterministiclowermodel: f(x)=|x2−1|,f (y)=|1.25−y|
+0.5
+The methods we consider then simply iterate the steps:
+Sample ξ ∼P,
+t
+(1.2) (cid:26) 1 (cid:27)
+Set x =argmin f (y,ξ )+r(y)+ (cid:107)y−x (cid:107)2 .
+t+1 xt t 2α t
+y t
+We will prove that under mild Lipschitz conditions and provided that each function
+f (·,ξ)+r(·) is ρ-weakly convex, Algorithm 1.2 finds a point x with E(cid:107)∇ϕ (x)(cid:107)≤
+x 1/2ρ
+ε after at most O(ε−4) iterations. The main principle underlying the convergence
+guarantees is interesting in its own right. We will show that Algorithm 1.2 can be
+interpreted as an approximate descent method on the Moreau envelope:
+(1.3) E[ϕ (x )]≤E[ϕ (x )]−α c E[(cid:107)∇ϕ (x )(cid:107)2]+α2c ,
+λ t+1 λ t t 1 λ t t 2
+where λ,c ,c are problem dependent constants.
+1 2
+When the models f (·,ξ) are true under-estimators of f in expectation, meaning
+x
+that (1.1) holds with τ = 0, and the functions f (·,ξ)+r(·) are convex, one expects
+x
+guarantees that are analogous to the stochastic subgradient method for convex mini-
+mization. Indeed, we will show that under these circumstances, Algorithm (1.2) has
+complexity O(ε−2) in terms of function value. The complexity estimate improves to
+O( 1 ) when the functions f (·,ξ)+r(·) are µ-strongly convex. Though the convexity
+µε x
+assumption may appear stringent, it does hold in a number of nonclassical circum-
+stances,suchasforminimizingtheConditionValue-atRisk(cVaR)ofalossfunction;
+see Example 2.6 and Section 4.2 for details.
+Tocrystallizetheideas,considerthesettingofstochasticcompositeoptimization,
+studied recently by Duchi-Ruan [31]:
+(cid:0) (cid:1)
+f(x,ξ)=h c(x,ξ),ξ ,
+
+--- PAGE 6 ---
+6 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+where the functions h(·,ξ) are convex and the maps c(·,ξ) are smooth. Note that
+in the simplest setting when P is a discrete distribution on {1,...,m}, the problem
+(SO) reduces to minimizing a regularized empirical average of composite functions:
+m
+1 (cid:88)
+min ϕ(x)=f(x)+r(x) where f(x)= h (c (x))
+x∈Rd m i i
+i=1
+In this setting, the following three stochastic one-sided models appear naturally:
+(1.4) f (y,ξ)=f(x)+(cid:104)∇c(x,ξ)Tw(x,ξ),y−x(cid:105),
+x
+(cid:0) (cid:1)
+(1.5) f (y,ξ)=h c(x,ξ)+∇c(x,ξ)(y−x),ξ ,
+x
+(cid:0)
+(1.6) f (y,ξ)=h c(y,ξ)),
+x
+where w(x,ξ)∈∂h(c(x,ξ),ξ) is a subgradient selection. Each iteration of Algorithm
+1.2 with the models (1.4) reduces to the stochastic proximal subgradient update, al-
+ready mentioned previously. When equipped with the models (1.5), the method be-
+comesthestochasticprox-linearalgorithm—aclosevariantofGauss-Newton. Bothof
+theseschemeswererecentlyinvestigatedin[31],wheretheauthorsshowedthatalmost
+surely all limit points are stationary for the problem (SO). Algorithm 1.2 equipped
+with the models (1.6) is the stochastic proximal-point algorithm. This scheme was
+recently considered for convex minimization in [61] and extended to monotone inclu-
+sions in [9]. Notice that in contrast to the stochastic proximal subgradient method,
+the stochastic proximal point and prox-linear algorithms require solving an auxil-
+iary subproblem. The advantage of these two schemes is that the models (1.5) and
+(1.6) provide much finer approximation quality, in that they are two-sided instead
+of one-sided. Indeed, empirical evidence [31, Section 4] suggests that the latter two
+algorithmscanperformsignificantlybetterandaremuchmorerobusttothechoiceof
+the sequence α . We also observe this phenomenon in our experiments in Section 5.
+t
+The outline of the paper is as follows. We begin with Section 2, which records
+somebasicnotationandresultsfocusingonweakconvexityandtheMoreauenvelope.
+This section also presents a number of illustrative applications that will be readily
+amenable to our algorithmic techniques. We then present three distinct convergence
+arguments: for the stochastic projected subgradient method in Section 3.1, for the
+stochastic proximal subgradient method in Section 3.2, and for algorithms based on
+general stochastic one-sided models in Section 4. Each argument has its own virtue.
+In particular, our guarantees for the stochastic projected subgradient method place
+no restriction on the parameters α to be used, in contrast to our latter results. The
+t
+argument for the stochastic proximal subgradient method generalizes verbatim to
+the setting when f is C1-smooth and the stochastic gradient estimator has bounded
+variance, instead of a bounded second moment that we assume elsewhere. Section 4
+applies to the most general classes of algorithms including stochastic proximal sub-
+gradient, prox-linear, and proximal point methods.
+Context and related literature. The convergence guarantees we develop for
+the proximal stochastic subgradient method are new even in simplified cases. Two
+such settings are (i) when f(·,ξ) are smooth and r is the indicator function of a
+closed convex set, and (ii) when f is nonsmooth, we have explicit access to the exact
+subgradients of f, and r =0.
+Analogous convergence guarantees when r is an indicator function of a closed
+convex set were recently established for a different algorithm in [24]. This scheme
+
+--- PAGE 7 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 7
+proceedsbydirectlyapplyingthegradientdescentmethodtotheMoreauenvelopeϕ ,
+λ
+witheachproximalpointprox (x)approximatelyevaluatedbyaconvexsubgradient
+λϕ
+method. In contrast, we show here that the basic stochastic subgradient method in
+thefullyproximalsetting,andwithoutanymodificationorparametertuning,already
+satisfies the desired convergence guarantees.
+Our work also improves in two fundamental ways on the results in the seminal
+papers on the stochastic proximal gradient method for smooth functions [35,36,67]:
+first, we allow f(·,ξ) to be nonsmooth and second, even when f(·,ξ) are smooth,
+we do not require the variance of our stochastic estimator for ∇f(x ) to decrease as
+t
+a function of t. The second contribution removes the well-known “mini-batching”
+requirements common to [36,67], while the first significantly expands the class of
+functions for which the rate of convergence of the stochastic proximal subgradient
+method is known. It is worthwhile to mention that our techniques rely on weak
+convexity of the regularizer r, while [67] makes no such assumption.
+The results in this paper are orthogonal to the recent line of work on accelerated
+ratesofconvergenceforsmoothnonconvexfinitesumminimizationproblems,e.g.,[3,
+4,38,53]. Theseworkscruciallyexploitthefinitesumstructureand/or(higherorder)
+smoothness of the objective functions to push beyond the O(ε−4) complexity. We
+leave it as an intriguing open question whether such improvement is possible for the
+nonsmooth weakly convex setting we consider here.
+The unifying concept of stochastic one-sided models has not been explicitly used
+before. The complexity guarantees for the proximal stochastic subgradient, prox-
+linear, and proximal point methods (Theorem 4.3) for stochastic composite mini-
+mization are new and nicely complement the recent paper [31]. There, the authors
+proved that almost surely all limit points of the first two methods are stationary. For
+a historical account of the prox-linear method, see e.g., [10,29,40] and the references
+therein. Forasystematicstudyoftwo-sidedmodels(e.g. (1.5)and(1.6))inoptimiza-
+tion, see [27]. Stochastic compositional problems have also appeared in the parallel
+lineofwork[66]. There,theauthorsrequiretheentirecompositefunctiontobeeither
+convex or smooth. We make no such assumptions here.
+The convergence rate of Algorithm 1.2 in terms of function values in the convex
+setting is presented in Theorems 4.1, 4.2, and is intriguing. Even specializing to the
+proximal stochastic subgradient method, Theorems 4.1 and 4.2 appear to be stronger
+than the state of the art. Namely, in contrast to previous work [19,32], the norms of
+thesubgradientsofr donotenterthecomplexityboundsestablishedinTheorem4.1,
+while Theorem 4.2 extends the nonuniform averaging technique of [62] for strongly
+convex minimization to the fully proximal setting.
+The observation that Algorithm 1.2 is an approximate descent method on the
+Moreau envelope (1.3) is tangentially related to the recent work on “inexact first-
+order oracles” in convex optimization [25,48] and its partial extensions to nonconvex
+settings [33]. Expanding on the precise relationship between the techniques is an
+intriguing open question.
+2. Basic notation and preliminaries. Throughout, we consider a Euclidean
+space Rd endowed with an inner product (cid:104)·,·(cid:105) and the induced norm (cid:107)x(cid:107)= (cid:112) (cid:104)x,x(cid:105).
+For any function ϕ: Rd →R∪{∞}, the domain and epigraph are the sets
+domϕ={x∈Rd :ϕ(x)<∞}, epiϕ={(x,r)∈Rd×R:r ≥ϕ(x)},
+respectively. We say that ϕ: Rd →R∪{∞} is closed if the epiϕ is a closed set.
+
+--- PAGE 8 ---
+8 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+This work focuses on algorithms for minimizing weakly convex functions.1 A
+function ϕ: Rd → R∪{∞} is called ρ-weakly convex if the assignment x (cid:55)→ ϕ(x)+
+ρ(cid:107)x(cid:107)2 is a convex function. In this section, we summarize some basic properties
+2
+of this function class. All results we state in this section are either standard, or
+follow quickly from analogous results for convex functions. For further details and a
+historical account, we refer the reader to the short note [26].
+2.1. Examples of weakly convex functions. Weakly convex functions are
+widespread in applications and are typically easy to recognize. One common source
+is the composite function class:
+(2.1) ϕ(x):=h(c(x)),
+where h: Rm → R is convex and L-Lipschitz and c: Rd → Rm is a C1-smooth map
+with β-Lipschitz continuous Jacobian. An easy argument shows that the composite
+function ϕ is Lβ-weakly convex [29, Lemma 4.2]. Below, we list a few examples to
+illustrate how widespread this problem class is in large-scale data scientific applica-
+tions. The examples are here only to set the context; the reader can safely skip this
+discussion during the initial reading.
+Example 2.1 (Robust phase retrieval). Phase retrieval is a common compu-
+tational problem, with applications in diverse areas such as imaging, X-ray crystal-
+lography, and speech processing. For simplicity, we will consider the version of the
+problem over the reals. The (real-valued) phase retrieval problem seeks to determine
+a point x satisfying the magnitude conditions,
+|(cid:104)a ,x(cid:105)|≈b for i=1,...,m,
+i i
+where a ∈ Rd and b ∈ R are given. Whenever gross outliers occur in the measure-
+i i
+ments b , the following robust formulation of the problem is appealing [23,30,34]:
+i
+m
+1 (cid:88)
+min |(cid:104)a ,x(cid:105)2−b2|.
+x m i i
+i=1
+The use of the (cid:96) penalty promotes strong recovery and stability properties even in
+1
+thenoiselesssetting[30,34]. Numerousothernonconvexapproachestophaseretrieval
+exist, which rely on different problem formulations; for example, [12,15,64].
+Example 2.2 (Covariance matrix estimation). The problem of covariance esti-
+mation from quadratic measurements, introduced in [16], is a higher rank variant of
+phase retrieval. Let a ,...,a ∈Rd be measurement vectors. The goal is to recover
+1 m
+a low rank decomposition of a covariance matrix X¯X¯T, with X¯ ∈ Rd×r for a given
+0≤r ≤d, from quadratic measurements
+b ≈aTX¯X¯Ta =Tr(X¯X¯Ta aT).
+i i i i i
+Note that we can only recover X¯ up to multiplication by an orthogonal matrix. This
+problem arises in a variety of contexts, such as covariance sketching for data streams
+andspectrumestimationofstochasticprocesses. Wereferthereaderto[16]fordetails.
+Supposingthatmiseven,theauthorsof[16]showthatthefollowingpotentialfunction
+has strong recovery guarantees under usual statistical assumptions:
+m
+(2.2) X m ∈R i d n ×r m 1 (cid:88)(cid:12) (cid:12) (cid:10) XXT,a 2i aT 2i −a 2i−1 aT 2i−1 (cid:11) −(b 2i −b 2i−1 ) (cid:12) (cid:12).
+i=1
+1Tothebestofourknowledge,theclassofweaklyconvexfunctionswasintroducedin[50].
+
+--- PAGE 9 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 9
+Example 2.3 (Blind deconvolution and biconvex compressive sensing).
+The problem of blind deconvolution seeks to recover a pair of vectors in two low-
+dimensional structured spaces from their pairwise convolution. This problem occurs
+in a number of fields, such as astronomy and computer vision [13,39]. For simplicity
+focusing on the real-valued case, one appealing formulation of the problem reads
+m
+1 (cid:88)
+min |(cid:104)u ,x(cid:105)(cid:104)v ,y(cid:105)−b |,
+x,y m i i i
+i=1
+where u and v are known vectors, and b are the convolution measurements. More
+i i i
+broadly,problemsofthisformfallwithintheareaofbiconvexcompressivesensing[41].
+Similarly to the previous two examples, the use of the (cid:96) -penalty on the residuals
+1
+allowsforstrongrecoveryandidentifiabilitypropertiesoftheproblemunderstatistical
+assumptions. Details will appear in a forthcoming paper.
+Example 2.4 (Sparse dictionary learning). The problem of sparse dictionary
+learningseekstofindasparserepresentationoftheinputdataasalinearcombination
+of basic atoms, which comprise the “dictionary”. This technique is routinely used in
+image and video processing. More formally, given a set of vectors {x ,...,x }⊂Rd,
+1 m
+we wish to find a matrix D ∈ Rd×n and sparse weights {r ,...,r } ⊂ Rn such that
+1 m
+theerror(cid:107)x −Dr (cid:107) issmallforalli. Thefollowingisarobustvariantofthestandard
+i i 2
+relaxation of the problem:
+m
+1 (cid:88)
+(2.3) min (cid:107)x −Dr (cid:107) +λ(cid:107)r (cid:107) subject to (cid:107)D (cid:107)≤1 ∀i.
+D∈Rd×n, r1∈Rn m
+i=1
+i i 2 i 1 i
+More precisely, typical formulations use the squared norm (cid:107)·(cid:107)2 instead of the norm
+2
+(cid:107)·(cid:107) ; see e.g. [42,65]. When there are outliers in the data (i.e. not all of the data
+2
+vectorsx canbesparselyrepresented),theformulation(2.3)maybemoreappealing.
+i
+Example 2.5 (Robust PCA). In robust principal component analysis, one seeks
+to identify sparse corruptions of a low-rank matrix [11,14]. One typical example
+is image deconvolution, where the low-rank structure models the background of an
+image while the sparse corruption models the foreground. Formally, given a m×n
+matrix M, the goal is to find a decomposition M = L+S, where L is low rank and
+S is sparse. A common relaxation of the problem is
+min (cid:107)UVT −M(cid:107) ,
+1
+U∈Rm×r,V∈Rn×r
+where r is the target rank. As is common, the entrywise (cid:96) norm encourages a sparse
+1
+residual UVT −M.
+Example 2.6 (Conditional Value-at-Risk). As in the introduction, let f(x,ξ) be
+a loss of a decision rule parametrized by x on a data point ξ, where the population
+datafollowsaprobabilitydistributionξ ∼P. Ratherthanminimizingtheexpectation
+f(x)=E f(x,ξ), one often wishes to minimize the conditional expectation of the
+ξ∼P
+random variable f(x,·) over its α-tail, for some fixed α ∈ (0,1). This quantity is
+called the Conditional Value-at-Risk (cVaR) and it has a distinguished history. In
+particular, it is well known from the seminal work [60] that minimizing cVaR of the
+
+--- PAGE 10 ---
+10 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+loss function can be formalized as2
+min (1−α)γ+E [(f(x,ξ)−γ)+],
+ξ∼P
+γ∈R,x∈Rd
+where we use the notation r+ = max{0,r}. If the loss function f(·,ξ) is ρ-weakly
+convexfora.e. ξ,thentheentireobjectivefunctionisρ-weaklyconvexjointlyin(γ,x).
+In particular, this is the case when f(·,ξ) is C1-smooth with Lipschitz gradient, or
+whenthelossisf(·,ξ)isconvexfora.e. ξ. Noticethatthetermsinsidetheexpectation
+(f(·,ξ)−γ)+ are always nonsmooth, even if the loss function f(·,ξ) is smooth.
+2.2. Subdifferential and the Moreau envelope. A key property of convex
+functions is that any subgradient yields a global affine under-estimator of the func-
+tion. It is this availability of global under-estimators that enables convergence guar-
+antees for nonsmooth convex optimization. An analogous property is true for weakly
+convexfunctions,withthecaveatthatthesubdifferentialismeantinabroadervaria-
+tionalanalyticsenseandtheaffineunder-estimatorsarereplacedbyconcavequadratic
+under-estimators. We now formalize this observation.
+Consider a function ϕ: Rd →R∪{∞} and a point x∈Rd, with ϕ(x) finite. The
+subdifferential of ϕ at x, denoted ∂ϕ(x), consists of all vectors v satisfying
+ϕ(y)≥ϕ(x)+(cid:104)v,y−x(cid:105)+o((cid:107)y−x(cid:107)) as y →x.
+We set ∂ϕ(x)=∅ for all x∈/ domϕ. When ϕ is C1-smooth, the subdifferential ∂ϕ(x)
+consists only of the gradient {∇ϕ(x)}, while for convex functions it reduces to the
+subdifferentialinthesenseofconvexanalysis. Thefollowingcharacterizationofweak
+convexity is standard; we provide a short proof for completeness.
+Lemma 2.1 (Subdifferential characterization).
+Thefollowingareequivalentforanylower-semicontinuousfunctionϕ: Rd →R∪{∞}.
+1. The function f is ρ-weakly convex.
+2. The approximate secant inequality holds:
+(2.4) ϕ(λx+(1−λ)y)≤λϕ(x)+(1−λ)ϕ(y)+ ρλ(1−λ)(cid:107)x−y(cid:107)2,
+2
+for all x,y ∈Rd and λ∈[0,1].
+3. The subgradient inequality holds:
+ρ
+(2.5) ϕ(y)≥ϕ(x)+(cid:104)v,y−x(cid:105)− (cid:107)y−x(cid:107)2, ∀x,y ∈Rd, v ∈∂ϕ(x).
+2
+4. The subdifferential map is hypomontone:
+(cid:104)v−w,x−y(cid:105)≥−ρ(cid:107)x−y(cid:107)2,
+for all x,y ∈Rd, v ∈∂ϕ(x), and w ∈∂ϕ(y).
+If ϕ is C2-smooth, then the four properties above are all equivalent to
+∇2ϕ(x)(cid:23)−ρI ∀x∈Rd.
+Proof. Algebraicmanipulationshowsthattheusualsecantinequalityonthefunc-
+tion ϕ+ ρ(cid:107)·(cid:107)2 is precisely the approximate secant inequality (2.4) on ϕ. Therefore
+2
+2We refer the reader to [57, pp. 44] and [8] for a historical account of the cVaR minimization
+formula,andinparticularitsinterpretationasthe“optimizedcertaintyequivalent”introducedin[7].
+
+--- PAGE 11 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 11
+we deduce the equivalence 1 ⇔ 2. Suppose now 1 holds and define the function
+g(x) = ϕ(x)+ ρ(cid:107)x(cid:107)2. Note the equality ∂g(x) = ∂ϕ(x)+ρx; see e.g. [58, Exercise
+2
+8.8]. Since g is convex, the inequality, g(y) ≥ g(x)+(cid:104)v +ρx,y −x(cid:105), holds for all
+x,y ∈Rd andv ∈∂ϕ(x). Algebraicmanipulationsthenimmediatelyimply (2.5), and
+therefore 3 holds. The implication 3 ⇒ 4 follows by adding to (2.5) the analogous
+inequalitywithxandy interchanged. Finallysupposethat4holds. Algebraicmanip-
+ulationsthanimplythatthesubdifferentialofϕ+ρ(cid:107)·(cid:107)2 isagloballymonotonemap.
+2
+Applying [58, Theorem 12.17], we conclude that ϕ+ ρ(cid:107)·(cid:107)2 is convex and therefore 1
+2
+holds. Finally the characterization of weak convexity when ϕ is C2-smooth is imme-
+diate from the second-order characterization of convexity of the function ϕ+ρ(cid:107)·(cid:107)2.
+2
+For any function ϕ: Rd → R∪{∞} and λ > 0, the Moreau envelope and the
+proximal map are defined by
+(2.6) ϕ (x):=min (cid:8) ϕ(y)+ 1 (cid:107)y−x(cid:107)2(cid:9) ,
+λ y 2λ
+prox (x):=argmin (cid:8) ϕ(y)+ 1 (cid:107)y−x(cid:107)2(cid:9) ,
+λϕ 2λ
+y
+respectively. Classically, the Moreau envelope of a convex function is C1-smooth for
+any λ > 0; see [43]. The same is true for weakly convex functions, provided λ is
+sufficiently small.
+Lemma 2.2. Consider a ρ-weakly convex function ϕ: Rd → R∪{∞}. Then for
+any λ∈(0,ρ−1), the Moreau envelope ϕ is C1-smooth with gradient given by
+λ
+∇ϕ (x)=λ−1(x−prox (x)).
+λ λϕ
+See Figure 1a for an illustration.
+As mentioned in the introduction, the norm of the gradient (cid:107)∇ϕ (x)(cid:107) has an in-
+λ
+tuitiveinterpretationintermsofnear-stationarity. Namely,theoptimalityconditions
+for the minimization problem in (2.6) directly imply that for any point x ∈ Rd, the
+proximal point xˆ:=prox (x) satisfies
+λϕ
+
+(cid:107)xˆ−x(cid:107) =λ(cid:107)∇ϕ (x)(cid:107),
+ λ
+ϕ(xˆ) ≤ϕ(x),
+ dist(0;∂ϕ(xˆ)) ≤(cid:107)∇ϕ (x)(cid:107).
+λ
+Thus a small gradient (cid:107)∇ϕ (x)(cid:107) implies that x is near some point xˆ that is nearly
+λ
+stationary for ϕ; see Figure 1b. All of the convergence guarantees that we present
+will be in terms of the quantity (cid:107)∇ϕ (x)(cid:107).
+λ
+It is important to keep in mind that in more classical circumstances, the size of
+the gradient of the Moreau envelope is proportional to more familiar quantities. To
+illustrate, consider the optimization problem
+(2.7) min ϕ(x):=f(x)+r(x)
+x∈Rd
+where f: Rd → R is C1-smooth with ρ-Lipschitz gradient and r: Rd → R∪{∞}
+is closed and convex. Much of the literature [36,47] focusing on this problem class
+highlights the role of the prox-gradient mapping:
+(2.8) G (x)=λ−1(x−prox (x−λ∇f(x))).
+λ λr
+
+--- PAGE 12 ---
+12 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+Indeed, complexity estimates are typically stated in terms of the norm of the prox-
+gradient mapping (cid:107)G (x)(cid:107). On the other hand, one can show that the two station-
+1/ρ
+arity measures, (cid:107)∇ϕ (x)(cid:107) and (cid:107)G (x)(cid:107), are proportional [28, Theorem 4.5]:
+1/2ρ 1/ρ
+(cid:16) (cid:17)
+1(cid:107)∇ϕ (x)(cid:107)≤(cid:107)G (x)(cid:107)≤ 3 1+ √1 (cid:107)∇ϕ (x)(cid:107) ∀x∈Rd.
+4 1/2ρ 1/ρ 2 2 1/2ρ
+Thus when specializingour results to the setting (2.7), all of the convergence guaran-
+tees can be immediately translated in terms of the prox-gradient mapping.
+3. Proximalstochasticsubgradientmethod. Inthissection,weanalyzethe
+proximal stochastic subgradient method for weakly convex minimization. Through-
+out, we consider the optimization problem
+(3.1) min ϕ(x)=f(x)+r(x),
+x∈Rd
+where r: Rd → R∪{+∞} is a closed convex function and f: Rd → R is a ρ-weakly
+convex function. We assume that the only access to f is through a stochastic subgra-
+dient oracle.
+Assumption A (Stochasticsubgradientoracle).Fixaprobabilityspace(Ω,F,P)
+and equip Rd with the Borel σ-algebra. We make the following three assumptions:
+(A1) It is possible to generate i.i.d. realizations ξ ,ξ ,...∼P.
+1 2
+(A2) There is an open set U containing domr and a measurable mapping G: U ×
+Ω→Rd satisfying E [G(x,ξ)]∈∂f(x) for all x∈U.
+ξ
+(A3) There is a real L ≥ 0 such that the inequality, E (cid:2) (cid:107)G(x,ξ)(cid:107)2(cid:3) ≤ L2, holds
+ξ
+for all x∈domr.
+The three assumption (A1), (A2), (A3) are standard in the literature on stochas-
+tic subgradient methods: assumptions (A1) and (A2) are identical to assumptions
+(A1) and (A2) in [44], while Assumption (A3) is the same as the assumption listed
+in [44, Equation (2.5)]. We will investigate the efficiency of the proximal stochastic
+subgradient method, described in Algorithm 3.1.
+Algorithm 3.1 Proximal stochastic subgradient method
+Input: x ∈domr, a sequence {α } ⊂R , and iteration count T
+0 t t≥0 +
+Step t=0,...,T:
+(cid:40) (cid:41)
+Sample ξ ∼P
+t
+,
+Set x =prox (x −α G(x ,ξ ))
+t+1 αtr t t t t
+Sample t∗ ∈{0,...,T} according to P(t∗ =t)= αt .
+(cid:80)T
+α
+i=0 i
+Return x
+t∗
+Henceforth, the symbol E [·] will denote the expectation conditioned on all the
+t
+realizations ξ ,ξ ,...,ξ .
+0 1 t−1
+3.1. Projected stochastic subgradient method.
+OuranalysisofAlgorithm3.1isshorterandmoretransparentwhenr istheindicator
+functionofaclosed, convexsetX. Thisisnotsurprising, sinceprojectedsubgradient
+
+--- PAGE 13 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 13
+methods are typically much easier to analyze than their proximal extensions (e.g.
+[19,32]). Note that (3.1) then reduces to the constrained problem
+(3.2) min f(x),
+x∈X
+andtheproximalmapprox (·)becomesthenearestpointprojectionproj (·). Thus
+αr X
+throughout Section 3.1, we suppose that Assumptions (A1), (A2), and (A3) hold and
+that r(·) is the indicator function of a closed convex set X. The following is the main
+result of this section.
+Theorem 3.1 (Stochastic projected subgradient method). Let x be the point
+t∗
+returned by Algorithm 3.1. Then in terms of any constant ρ¯>ρ, the estimate holds:
+(3.3) E(cid:2) ϕ (x ) (cid:3) ≤E[ϕ (x )]− α t (ρ¯−ρ) E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) + α t 2ρ¯L2 ,
+1/ρ¯ t+1 1/ρ¯ t ρ¯ 1/ρ¯ t 2
+and therefore we have
+(3.4) E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) ≤ ρ¯ · (ϕ 1/ρ¯ (x 0 )−minϕ)+ ρ¯L 2 2 (cid:80)T t=0 α t 2 .
+1/ρ¯ t∗ ρ¯−ρ (cid:80)T α
+t=0 t
+In particular, if Algorithm 3.1 uses the constant parameter α t = √ T γ +1 , for some real
+γ >0, then the point x satisfies:
+t∗
+(cid:0) ϕ (x )−minϕ (cid:1) +ρL2γ2
+(3.5) E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) ≤2· 1/2ρ 0 √ .
+1/2ρ t∗
+γ T +1
+Proof. Let x denote the points generates by Algorithm 3.1. For each index t,
+t
+define v :=E [G(x ,ξ)]∈∂f(x ) and set xˆ :=prox (x ). We successively deduce
+t t t t t ϕ/ρ¯ t
+(3.6) E (cid:2) ϕ (x ) (cid:3) ≤E (cid:104) f(xˆ )+ ρ¯ (cid:107)xˆ −x (cid:107)2 (cid:105)
+t 1/ρ¯ t+1 t t 2 t t+1
+=f(xˆ )+ ρ¯ E (cid:2) (cid:107)proj (x −α G(x ,ξ ))−proj (xˆ )(cid:107)2(cid:3)
+t 2 t X t t t t X t
+(3.7) ≤f(xˆ )+ ρ¯ E (cid:2) (cid:107)(x −xˆ )−α G(x ,ξ )(cid:107)2(cid:3)
+t 2 t t t t t t
+ρ¯ α2ρ¯L2
+≤f(xˆ )+ (cid:107)x −xˆ (cid:107)2+ρ¯α E [(cid:104)xˆ −x ,G(x ,ξ )(cid:105)]+ t
+t 2 t t t t t t t t 2
+α2ρ¯L2
+≤ϕ (x )+ρ¯α (cid:104)xˆ −x ,v (cid:105)+ t
+1/ρ¯ t t t t t 2
+(cid:16) ρ (cid:17) α2ρ¯L2
+(3.8) ≤ϕ (x )+ρ¯α f(xˆ )−f(x )+ (cid:107)x −xˆ (cid:107)2 + t ,
+1/ρ¯ t t t t 2 t t 2
+where (3.6) follows directly from the definition of the proximal map, (3.7) uses that
+the projection proj (·) is 1-Lipschitz, and (3.8) follows from (2.5).
+X
+Next, observe that the function x (cid:55)→ f(x)+ ρ¯(cid:107)x−x (cid:107)2 is strongly convex with
+2 t
+parameter ρ¯−ρ, and therefore
+ρ (cid:16) ρ¯ (cid:17) (cid:16) ρ¯ (cid:17)
+f(x )−f(xˆ )− (cid:107)x −xˆ (cid:107)2 = f(x )+ (cid:107)x −x (cid:107)2 − f(xˆ )+ (cid:107)x −xˆ (cid:107)2
+t t 2 t t t 2 t t t 2 t t
+ρ¯−ρ
++ (cid:107)x −xˆ (cid:107)2
+2 t t
+ρ¯−ρ
+≥(ρ¯−ρ)(cid:107)x −xˆ (cid:107)2 = (cid:107)∇ϕ (x )(cid:107)2,
+t t ρ¯2 1/ρ¯ t
+
+--- PAGE 14 ---
+14 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+where the last equality follows from Lemma 2.2. Thus we deduce
+E (cid:2) ϕ (x ) (cid:3) ≤ϕ (x )− α t (ρ¯−ρ) (cid:107)∇ϕ (x )(cid:107)2+ α t 2ρ¯L2 .
+t 1/ρ¯ t+1 1/ρ¯ t ρ¯ 1/ρ¯ t 2
+Taking expectations of both sides with respect to ξ ,ξ ,...,ξ , and using the law
+0 1 t−1
+of total expectation yields the claimed inequality (3.3)
+Unfolding the recursion (3.3) yields:
+E(cid:2) ϕ (x ) (cid:3) ≤ϕ (x )+ ρ¯L2 (cid:88) T α2− ρ¯−ρ · (cid:88) T α E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) .
+1/ρ¯ T+1 1/ρ¯ 0 2 t ρ¯ t 1/ρ¯ t
+t=0 t=0
+Lower-bounding the left-hand side by minϕ and rearranging, we obtain the bound:
+1 (cid:88) T α E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) ≤ ρ¯ · ϕ 1/ρ¯ (x 0 )−minϕ+ ρ¯L 2 2 (cid:80)T t=0 α t 2 .
+(cid:80)T α t 1/ρ¯ t ρ¯−ρ ρ¯ (cid:80)T α
+t=0 t t=0 t=0 t
+Notice that the left-hand-side is precisely the expectation
+E(cid:2)
+(cid:107)∇ϕ (x
+)(cid:107)2(cid:3)
+. Thus
+1/ρ¯ t∗
+(3.4) holds, as claimed. Finally, (3.5) follows from (3.4) by setting ρ¯ = 2ρ and
+α t = √ T γ +1 for all indices t=0,1,...,T.
+Letustranslatetheestimate(3.5)intoacomplexityboundbyminimizingoutinγ.
+Namely,supposewehaveavailablesomereal∆>0satisfying∆≥ϕ (x )−minϕ.
+1/(2ρ) 0
+We deduce from (3.5) the estimate, E(cid:2) (cid:107)∇ϕ 1/(2ρ) (x t∗ )(cid:107)2(cid:3) ≤ 2· ∆ γ + √ ρ T L + 2γ 1 2 . Minimizing
+(cid:113)
+the right-hand side in γ yields the choice γ = ∆ and therefore the guarantee
+ρL2
+(cid:114)
+(3.9)
+E(cid:2)
+(cid:107)∇ϕ (x
+)(cid:107)2(cid:3)
+≤4·
+ρ∆L2
+.
+1/(2ρ) t∗ T +1
+In particular, suppose that f is L-Lipschitz and the diameter of X is bounded by
+some D > 0. Then we may set ∆ := min (cid:8) ρD2,DL (cid:9) , where the first term follows
+from the definition of the Moreau envelope and the second follows from Lipschitz
+continuity. Then the number of subgradient evaluations required to find a point x
+satisfying E(cid:107)∇ϕ (x)(cid:107)≤ε is at most
+1/(2ρ)
+ (cid:110) (cid:111)
+(ρLD)2·min 1, L
+ρD
+(3.10) 16· .
+ ε4 
+ 
+This complexity in ε matches the guarantees of the stochastic gradient method for
+finding an ε-stationary point of a smooth function [35, Corollary 2.2].
+Improvedcomplexityunderconvexity. Itisintriguingtoaskifthecomplex-
+ity (3.10) can be improved when f is a convex function. The answer, unsurprisingly,
+is yes. Since f is convex, here and for the rest of the section, we will let the constant
+ρ>0bearbitrary. Asafirstattempt,onemayfollowtheobservationofNesterov[46]
+forsmoothminimization. Theideaisthattheright-hand-sideofthecomplexitybound
+(3.9)dependsontheinitialgapϕ(x )−minϕ. Wecanmakethisquantityassmallas
+0
+we wish by a separate subgradient method. Namely, we may simply run a subgradi-
+√
+ent method for T iterations to decrease the gap ϕ(x )−minϕ to ∆:=LD/ T +1;
+0
+see for example [37, Proposition 5.5] for this basic guarantee. Then we run another
+
+--- PAGE 15 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 15
+(cid:113)
+round of a subgradient method for T iterations using the optimal choice γ := ∆ .
+ρL2
+A quick computation shows that the resulting two-round scheme will find a point x
+satisfying E(cid:107)∇ϕ (x)(cid:107)≤ε after at most O(1)· L2(ρD)2/3 iterations.
+1/(2ρ) ε8/3
+By following a completely different technique, introduced by Allen-Zhu [5] for
+smooth stochastic minimization, this complexity can be even further improved to
+(cid:16) (L2+ρ2D2)log3(ρD) (cid:17)
+O(cid:101) ε by running logarithmically many rounds of the subgradient
+ε2
+method on quadratically regularized problems. Since this procedure and its analysis
+is somewhat long and is independent of the rest of the material, we have placed it in
+an independent arXiv technical report [20].
+3.2. Proximal stochastic subgradient method. We next move on to con-
+vergenceguaranteesofAlgorithm3.1infullgenerality. Animportantconsequencewe
+discussattheendofthesectionisaconvergenceguaranteeforthestochasticproximal
+gradient method for minimizing a sum of a smooth function and a convex function,
+wherethegradientoraclehasboundedvariance(insteadofboundedsecondmoment).
+ThosenotinterestedinthisguaranteecaninprincipleskiptoSection4,whichdetails
+our most general convergence result for nonsmooth minimization.
+Before we proceed, let us note that for any x ∈ U and v ∈ ∂f(x), we have
+(cid:107)v(cid:107) ≤ L. To see this, observe that (A2) and (A3) directly imply that whenever f is
+differentiable at x∈U, we have
+(cid:107)∇f(x)(cid:107)2 =(cid:107)E [G(x,ξ)](cid:107)2 ≤E [(cid:107)G(x,ξ)(cid:107)2]≤L2.
+ξ ξ
+Sinceatanypointx,thesubdifferential∂f(x)istheconvexhulloflimitsofgradients
+at nearby points [55, Theorem 25.6], the claim follows. We will use this estimate in
+the proof of Lemma 3.3.
+We break up the analysis of Algorithm 3.1 into two lemmas. Henceforth, fix a
+real ρ¯> ρ. Let x be the iterates produced by Algorithm 3.1 and let ξ ∼ P be the
+t t
+i.i.d. realizations used. For each index t, define v := E [G(x ,ξ)] ∈ ∂f(x ) and set
+t t t t
+xˆ := prox (x ). Observe that by the optimality conditions of the proximal map
+t ϕ/ρ¯ t
+andthe subdifferential sumrule[58, Exercise10.10], thereexistsa vector vˆ ∈∂f(xˆ )
+t t
+satisfying ρ¯(x −xˆ ) ∈ ∂r(xˆ )+vˆ. The following lemma realizes xˆ as a proximal
+t t t t t
+point of r.
+Lemma 3.2. For each index t≥0, equality holds:
+xˆ =prox (α ρ¯x −α vˆ +(1−α ρ¯)xˆ ).
+t αtr t t t t t t
+Proof. By the definition of vˆ, we have
+t
+α ρ¯(x −xˆ )∈α ∂r(xˆ )+α vˆ ⇐⇒α ρ¯x −α vˆ +(1−α ρ¯)xˆ ∈xˆ +α ∂r(xˆ )
+t t t t t t t t t t t t t t t t
+⇐⇒xˆ =prox (α ρ¯x −α vˆ +(1−α ρ¯)xˆ ),
+t αtr t t t t t t
+where the last equivalence follows from the optimality conditions for the proximal
+subproblem. This completes the proof.
+The next lemma establishes a crucial descent property for the iterates.
+Lemma 3.3. Suppose ρ¯∈ (ρ,2ρ] and we have α ∈ (0,1/ρ¯] for all indices t ≥ 0.
+t
+Then the inequality holds:
+E (cid:107)x −xˆ (cid:107)2 ≤(cid:107)x −xˆ (cid:107)2+4α2L2−2α (ρ¯−ρ)(cid:107)x −xˆ (cid:107)2.
+t t+1 t t t t t t t
+
+--- PAGE 16 ---
+16 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+Proof. Set δ :=1−α ρ¯. We successively deduce
+t
+E (cid:107)x −xˆ (cid:107)2 =E (cid:107)prox (x −α G(x ,ξ ))−prox (α ρ¯x −α vˆ +δxˆ )(cid:107)2
+t t+1 t t αtr t t t t αtr t t t t t
+(3.11) ≤E (cid:107)x −α G(x ,ξ )−(α ρ¯x −α vˆ +δxˆ )(cid:107)2
+t t t t t t t t t t
+(3.12) =E (cid:107)δ(x −xˆ )−α (G(x ,ξ )−vˆ)(cid:107)2
+t t t t t t t
+=δ2(cid:107)x −xˆ (cid:107)2−2δα E [(cid:104)x −xˆ ,G(x ,ξ )−vˆ(cid:105)]
+t t t t t t t t t
++α2E (cid:107)G(x ,ξ )−vˆ(cid:107)2
+t t t t t
+=δ2(cid:107)x −xˆ (cid:107)2−2δα (cid:104)x −xˆ ,v −vˆ(cid:105)+4α2L2
+t t t t t t t t
+(3.13) ≤δ2(cid:107)x −xˆ (cid:107)2+2δα ρ(cid:107)x −xˆ (cid:107)2+4α2L2
+t t t t t t
+=(1−(2α (ρ¯−ρ)+α2ρ¯(2ρ−ρ¯)))(cid:107)x −xˆ (cid:107)2+4α2L2,
+t t t t t
+where the first equation follows from Lemma 3.2, (3.11) uses that prox (·) is 1-
+αtr
+Lipschitz [58, Proposition 12.19], and (3.13) follows from (4). The result now follows
+from the assumed inequality ρ¯≤2ρ.
+With Lemma 3.3 proved, we can now establish convergence guarantees of Algo-
+rithm 3.1 in full generality.
+Theorem 3.4 (Stochastic proximal subgradient method). Fix a real ρ¯∈(ρ,2ρ]
+and a stepsize sequence α ∈(0,1/ρ¯]. Then the iterates x generated by Algorithm 3.1
+t t
+satisfy
+(3.14) E(cid:2) ϕ (x ) (cid:3) ≤E[ϕ (x )]− α t (ρ¯−ρ) E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) +α2ρ¯L2,
+1/ρ¯ t+1 1/ρ¯ t ρ¯ 1/ρ¯ t t
+and the point x returned by Algorithm 3.1 satisfies:
+t∗
+(3.15) E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) ≤ ρ¯ · (ϕ 1/ρ¯ (x 0 )−minϕ)+2ρ¯L2(cid:80)T t=0 α t 2 .
+1/ρ¯ t∗ ρ¯−ρ (cid:80)T α
+t=0 t
+In particular, if Algorithm 3.1 uses the constant parameter α t = √ T γ +1 , for some real
+γ ∈(0, 1 ], then the point x satisfies:
+2ρ t∗
+(cid:0) ϕ (x )−minϕ (cid:1) +4ρL2γ2
+(3.16) E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) ≤2· 1/2ρ 0 √ .
+1/2ρ t∗
+γ T +1
+Proof. We successively observe
+E (cid:2) ϕ (x ) (cid:3) ≤E (cid:104) ϕ(xˆ )+ ρ¯ (cid:107)xˆ −x (cid:107)2 (cid:105)
+t 1/ρ¯ t+1 t t 2 t t+1
+≤ϕ(xˆ )+ ρ¯(cid:2) (cid:107)x −xˆ (cid:107)2+4α2L2−2α (ρ¯−ρ)(cid:107)x −xˆ (cid:107)2(cid:3)
+t 2 t t t t t t
+=ϕ (x )+ρ¯ (cid:2) 2α2L2−α (ρ¯−ρ)(cid:107)x −xˆ (cid:107)2(cid:3) ,
+1/ρ¯ t t t t t
+wherethefirstinequalityfollowsdirectlyfromthedefinitionoftheproximalmapand
+the second follows from Lemma 3.3. Taking expectations with respect to ξ ,...,ξ
+0 t−1
+yieldstheclaimedinequality(3.14). TherestoftheproofproceedsasinTheorem3.1.
+Namely, unfolding the recursion (3.14) yields:
+T T
+E(cid:2) ϕ (x ) (cid:3) ≤ϕ (x )+2ρ¯L2 (cid:88) α2− ρ¯−ρ E (cid:88) α (cid:107)x −xˆ (cid:107)2.
+1/ρ¯ T+1 1/ρ¯ 0 t ρ¯ t t t
+t=0 t=0
+
+--- PAGE 17 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 17
+Lower-bounding the left-hand side by minϕ and rearranging, we obtain the bound:
+(3.17)
+1 (cid:88) T α E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) ≤ ρ¯ · (ϕ 1/ρ¯ (x 0 )−minϕ)+2ρ¯L2(cid:80)T t=0 α t 2 .
+(cid:80)T α t 1/ρ¯ t ρ¯−ρ (cid:80)T α
+t=0 t t=0 t=0 t
+Recognizing the left-hand-side as
+E(cid:2)
+(cid:107)x −xˆ
+(cid:107)2(cid:3)
+establishes (3.15). Setting ρ¯= 2ρ
+t∗ t∗
+and α t = √ T γ +1 in (3.15) yields the final guarantee (3.16).
+Proximal stochastic gradient for smooth minimization. Let us now look
+attheconsequencesofourresultsinthesettingwhenf isC1-smoothwithρ-Lipschitz
+gradient. Note,thatthenf isautomaticallyρ-weaklyconvex. Inthissmoothsetting,
+it is common to replace assumption (A3) with the finite variance condition:
+(A3) Thereisarealσ ≥0suchthattheinequality, E (cid:2) (cid:107)G(x,ξ)−∇f(x)(cid:107)2(cid:3) ≤σ2,
+ξ
+holds for all x∈domr.
+Henceforth,letusthereforeassumethatf isC1-smoothwithρ-Lipschitzgradient,
+and Assumptions (A1), (A2), and (A3) hold.
+Alloftheresults inSection3.2canbeeasilymodifiedtoapplytothis setting. In
+particular, Lemma 3.2 holds verbatim, while Lemma 3.3 extends as follows.
+Lemma 3.5. Fix a real ρ¯> ρ and a sequence α ∈ (0,1/ρ¯]. Then the inequality
+t
+holds:
+E (cid:107)x −xˆ (cid:107)2 ≤(cid:107)x −xˆ (cid:107)2+α2σ2−α (ρ¯−ρ)(cid:107)x −xˆ (cid:107)2.
+t t+1 t t t t t t t
+Proof. By the same argument as in Lemma 3.3, we arrive at (3.12) with vˆ =
+t
+∇f(xˆ ). Set δ := 1−α ρ¯ and w := G(x ,ξ )−∇f(x ). Adding and subtracting
+t t t t t t
+∇f(x ), we successively deduce
+t
+E (cid:107)x −xˆ (cid:107)2 ≤E (cid:107)δ(x −xˆ )−α (G(x ,ξ )−∇f(xˆ ))(cid:107)2
+t t+1 t t t t t t t t
+=E (cid:107)δ(x −xˆ )−α (∇f(x )−∇f(xˆ ))−α w (cid:107)2
+t t t t t t t t
+(3.18) =(cid:107)δ(x −xˆ )−α (∇f(x )−∇f(xˆ ))(cid:107)2+α2E (cid:107)w (cid:107)2
+t t t t t t t t
+≤δ2(cid:107)x −xˆ (cid:107)2−2δα (cid:104)x −xˆ ,∇f(x )−∇f(xˆ )(cid:105)
+t t t t t t t
+(3.19) +α2(cid:107)∇f(x )−∇f(xˆ )(cid:107)2+α2σ2
+t t t t
+(3.20) ≤(δ2+2δα ρ+ρ2α2)(cid:107)x −xˆ (cid:107)2+α2σ2
+t t t t t
+=(cid:107)x −xˆ (cid:107)2+α2σ2−α (ρ¯−ρ)(2−α (ρ¯−ρ))(cid:107)x −xˆ (cid:107)2,
+t t t t t t t
+where (3.18) follows from assumption (A2), namely E G(x ,ξ ) = ∇f(x ), (3.19)
+t t t t
+follows by expanding the square and using assumption (A3), and (3.20) follows from
+(4)andLipschitzcontinuityof∇f. Theassumptionρ¯≥ρguarantees2−α (ρ¯−ρ)≥1.
+t
+The result follows.
+We can now state the convergence guarantees of the proximal stochastic gradient
+method. The proof is completely analogous to that of Theorem 3.4, with Lemma 3.5
+playing the role of Lemma 3.3.
+Corollary 3.6 (Stochastic prox-gradient method for smooth minimization).
+Fix a real ρ¯>ρ and a stepsize sequence α ∈(0,1/ρ¯]. Then the iterates x generated
+t t
+by Algorithm 3.1 satisfy
+(3.21) E(cid:2) ϕ (x ) (cid:3) ≤E[ϕ (x )]− α t (ρ¯−ρ) E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) + α t 2ρ¯σ2 ,
+1/ρ¯ t+1 1/ρ¯ t 2ρ¯ 1/ρ¯ t 2
+
+--- PAGE 18 ---
+18 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+and the point x returned by Algorithm 3.1 satisfies:
+t∗
+(3.22) E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) ≤ 2ρ¯ · (ϕ 1/ρ¯ (x 0 )−minϕ)+ ρ¯σ 2 2 (cid:80)T t=0 α t 2 .
+1/ρ¯ t∗ ρ¯−ρ (cid:80)T α
+t=0 t
+In particular, if Algorithm 3.1 uses the constant parameter α t = √ T γ +1 , for some real
+γ ∈(0, 1 ], then the point x satisfies:
+2ρ t∗
+(ϕ (x )−minϕ)+ρσ2γ2
+E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) ≤4· 1/ρ¯ 0 √ .
+1/(2ρ) t∗
+γ T +1
+AsmentionedattheendofSection2.2,itisimmediatetotranslatethecomplexity
+estimate in Corollary 3.6 to an analogous estimate in terms of the size of the prox-
+gradientmapping(2.8),therebyallowingforadirectcomparisonwithpreviousresults.
+4. Stochastic model-based minimization. In the previous section, we es-
+tablished the complexity of O(ε−4) for the stochastic proximal subgradient methods.
+In this section, we show that the complexity O(ε−4) persists for a much wider class
+of algorithms, including the stochastic proximal point and prox-linear algorithms.
+Henceforth, we consider the optimization problem
+(4.1) min ϕ(x):=f(x)+r(x),
+x∈Rd
+where r: Rd →R∪{∞} is a closed function (not necessarily convex) and f: Rd →R
+is locally Lipschitz. We assume that the only access to f is through a stochastic
+one-sided model.
+Assumption B (Stochastic one-sided model). Fix a probability space (Ω,F,P)
+and equip Rd with the Borel σ-algebra. We assume that there exist real τ,η,L ∈ R
+such that the following four properties hold:
+(B1) (Sampling) It is possible to generate i.i.d. realizations ξ ,ξ ,...∼P.
+1 2
+(B2) (One-sided accuracy)ThereisanopenconvexsetU containingdomr and
+a measurable function (x,y,ξ)(cid:55)→g (y,ξ), defined on U ×U ×Ω, satisfying
+x
+E [f (x,ξ)]=f(x) ∀x∈U,
+ξ x
+and
+τ
+E [f (y,ξ)−f(y)]≤ (cid:107)y−x(cid:107)2 ∀x,y ∈U.
+ξ x 2
+(B3) (Weak-convexity) The function f (·,ξ)+r(·) is η-weakly convex ∀x ∈ U,
+x
+a.e. ξ ∈Ω.
+(B4) (Lipschitz property) There exists a measurable function L: Ω → R sat-
++
+isfying
+(cid:112)E
+[L(ξ)2]≤L and such that
+ξ
+(4.2) f (x,ξ)−f (y,ξ)≤L(ξ)(cid:107)x−y(cid:107),
+x x
+for all x,y ∈U and a.e. ξ ∼P.
+It will be useful for the reader to keep in mind the following lemma, which shows
+that the objective function ϕ is itself weakly convex with parameter τ+η and that f
+is L-Lipschitz continuous on U.
+Lemma 4.1. The function ϕ is (τ +η)-weakly convex and the inequality holds:
+(4.3) |f(x)−f(y)|≤L(cid:107)x−y(cid:107), for all x,y ∈U.
+
+--- PAGE 19 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 19
+Proof. Fixarbitrarypointsx,y ∈domrandarealλ∈[0,1],andsetx¯=λx+(1−
+λ)y. Definethefunctionf (y):=E [f (y,ξ)]. Takingintoaccounttheequivalenceof
+x ξ x
+weak convexity with the approximate secant inequality (2.4), we successively deduce
+(4.4) ϕ(x¯)=E [r(x¯)+f (x¯,ξ)]
+ξ x¯
+(4.5) ≤λE [r(x)+f (x,ξ)]+(1−λ)E [r(y)+f (y,ξ)]+ ηλ(1−λ)(cid:107)x−y(cid:107)2
+ξ x¯ ξ x¯ 2
+=λ(r(x)+f (x))+(1−λ)(r(y)+f (y))+ ηλ(1−λ)(cid:107)x−y(cid:107)2
+x¯ x¯ 2
+(4.6) ≤λϕ(x)+(1−λ)ϕ(y)+ τ(λ2(1−λ)+λ(1−λ)2)(cid:107)x−y(cid:107)2+ ηλ(1−λ)(cid:107)x−y(cid:107)2
+2 2
+=λϕ(x)+(1−λ)ϕ(y)+ (τ+η)λ(1−λ)(cid:107)x−y(cid:107)2,
+2
+where (4.4) uses (B2), inequality (4.5) uses (B3), and (4.6) uses (B2). Thus ϕ is
+(τ +η)-weakly convex, as claimed.
+Next, taking expectations in (B2) and in (4.2) yields the estimates:
+τ
+f(x)−f (y)≤L(cid:107)x−y(cid:107) and f (y)−f(y)≤ (cid:107)x−y(cid:107)2.
+x x 2
+Thus for any point x∈U, we deduce
+f(x)−f(y) L(cid:107)x−y(cid:107)+ τ(cid:107)y−x(cid:107)2
+limsup ≤limsup 2 =L.
+(cid:107)x−y(cid:107) (cid:107)x−y(cid:107)
+y→x y→x
+In particular, when f is differentiable at x, setting y = x−s∇f(x) with s (cid:38) 0, we
+deduce (cid:107)∇f(x)(cid:107) ≤ L. Since f is locally Lipschitz continuous, its Lipschitz constant
+on U is no greater than sup {(cid:107)∇f(y)(cid:107) : f is differentiable at y}.3 We therefore
+y∈U
+deduce that f is L-Lipschitz continuous on U, as claimed.
+Wecannowformalizethealgorithmweinvestigate,asAlgorithm4.1. Thereader
+should note that, in contrast to the previously discussed algorithms, Algorithm 4.1
+employs a nondecreasing stepsize β , which is inversely proportional to α . This
+t t
+notational choice will simplify the analysis and complexity guarantees that follow.
+Algorithm 4.1 Stochastic Model Based Minimization
+Input: x ∈Rd, real ρ¯>τ +η, a sequence {β } ⊆(ρ¯,∞), and iteration count T
+0 t t≥0
+Step t=0,...,T:
+ 
+Sample ξ ∼P
+ t 
+(cid:26) β (cid:27) ,
+ Set x t+1 =argmin r(x)+f xt (x,ξ t )+ 2 t(cid:107)x−x t (cid:107)2 
+x
+Sample t∗ ∈{0,...,T} according to the discrete probability distribution
+ρ¯−τ −η
+P(t∗ =t)∝ .
+β −η
+t
+Return x
+t∗
+3ThisfollowsbycombininggradientformulafortheClarkesubdifferential[18,Theorem8.1]with
+themeanvaluetheorem[18,Theorem2.4].
+
+--- PAGE 20 ---
+20 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+4.1. Analysis of the algorithm. Henceforth, let {x } be the iterates gen-
+t t≥0
+erated by Algorithm 4.1 and let {ξ } be the corresponding samples used. For each
+t t≥0
+index t≥0, define the proximal point
+xˆ =prox (x ).
+t ϕ/ρ¯ t
+As in Section 3, we will use the symbol E [·] to denote the expectation conditioned
+t
+on all the realizations ξ ,ξ ,...,ξ . The analysis of Algorithm 4.1 relies on the
+0 1 t−1
+following lemma, which establishes two descent type properties. Estimate (4.7) is in
+the same spirit as Lemma 3.3 in Section 3. The estimate (4.8), in contrast, will be
+used at the end of the section to obtain the convergence rate of Algorithm 4.1 in
+function values under convexity assumptions.
+Lemma 4.2. In general, for every index t≥0, we have
+ρ¯−τ −η 4L2
+(4.7) E (cid:107)xˆ −x (cid:107)2 ≤(cid:107)xˆ −x (cid:107)2− (cid:107)xˆ −x (cid:107)2+ .
+t t t+1 t t β −η t t (β −η)(β −ρ¯)
+t t t
+Moreover, for any point x∈domr, the inequality holds:
+(4.8) E (cid:2) (cid:107)x −x(cid:107)2(cid:3) ≤ β t +τ (cid:107)x −x(cid:107)2− 2 E [ϕ(x )−ϕ(x)]+ 2L2 .
+t t+1 β −η t β −η t t+1 β (β −η)
+t t t t
+Proof. Recall that the function x (cid:55)→ r(x)+f (x,ξ )+ βt(cid:107)x−x (cid:107)2 is strongly
+xt t 2 t
+convex with constant β −η and x is its minimizer. Hence for any x∈domr, the
+t t+1
+inequality holds:
+(cid:16) (cid:17) (cid:16) (cid:17)
+r(x)+f (x,ξ )+ βt(cid:107)x−x (cid:107)2 ≥ r(x )+f (x ,ξ )+ βt(cid:107)x −x (cid:107)2
+xt t 2 t t+1 xt t+1 t 2 t+1 t
++ βt−η(cid:107)x−x (cid:107)2.
+2 t+1
+Rearranging and taking expectations we successively deduce
+(cid:20) (cid:21)
+β −η β β
+E t (cid:107)x−x (cid:107)2+ t(cid:107)x −x (cid:107)2− t(cid:107)x−x (cid:107)2
+t 2 t+1 2 t+1 t 2 t
+≤E [r(x)+f (x,ξ )−r(x )−f (x ,ξ )]
+t xt t t+1 xt t+1 t
+(4.9) ≤E [r(x)+f (x,ξ )−r(x )−f (x ,ξ )+L(ξ)(cid:107)x −x (cid:107)]
+t xt t t+1 xt t t t+1 t
+(4.10) ≤r(x)+E [f (x,ξ)]−E [r(x )]−E [f (x ,ξ)]
+ξ xt t t+1 ξ xt t
+(cid:113) (cid:112)
++ E [L(ξ)2]· E [(cid:107)x −x (cid:107)2]
+ξ t t+1 t
+τ (cid:112)
+(4.11) ≤r(x)+f(x)−E [r(x )]−f(x )+ (cid:107)x−x (cid:107)2+L E [(cid:107)x −x (cid:107)2]
+t t+1 t 2 t t t+1 t
+τ (cid:112)
+=E [r(x)+f(x)−r(x )−f(x )]+ (cid:107)x−x (cid:107)2+L E [(cid:107)x −x (cid:107)2]
+t t+1 t 2 t t t+1 t
+τ
+(4.12) ≤E [r(x)+f(x)−r(x )−f(x )]+ (cid:107)x−x (cid:107)2
+t t+1 t+1 2 t
+(cid:112)
++LE [(cid:107)x −x (cid:107)]+L E [(cid:107)x −x (cid:107)2],
+t t+1 t t t+1 t
+where (4.9) follows from Assumption (B4), inequality (4.10) follows from Cauchy-
+Schwartz, inequality (4.11) follows from (B2), (4.12) follows from Lemma 4.1.
+
+--- PAGE 21 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 21
+Defineδ := (cid:112)E [(cid:107)x −x (cid:107)2]andnoticeδ ≥E (cid:107)x −x (cid:107). Rearranging(4.12),
+t t+1 t t t t+1
+we immediately deduce
+(cid:20) β −η (cid:21) (cid:20) β +τ (cid:21) β δ2
+E t (cid:107)x−x (cid:107)2 ≤E t (cid:107)x∗−x (cid:107)2 − t +2Lδ−E [ϕ(x )−ϕ(x)]
+t 2 t+1 t 2 t 2 t t+1
+(cid:20) β +τ (cid:21) 2L2
+≤E t (cid:107)x−x (cid:107)2 + −E [ϕ(x )−ϕ(x)],
+t 2 t β t t+1
+t
+wherethelastinequalityfollowsbymaximizingtheright-hand-sideinδ ∈R. Dividing
+through by β−η, we arrive at the claimed inequality (4.8).
+2
+Nextsettingx=xˆ in(4.12)andusingthedefinitionoftheprox-point,weobtain
+t
+(cid:20) (cid:21)
+β −η β β
+E t (cid:107)xˆ −x (cid:107)2+ t(cid:107)x −x (cid:107)2− t(cid:107)xˆ −x (cid:107)2
+t 2 t t+1 2 t+1 t 2 t t
+(cid:104) ρ¯ ρ¯ (cid:105) τ
+≤E − (cid:107)xˆ −x (cid:107)2+ (cid:107)x −x (cid:107)2 + (cid:107)xˆ −x (cid:107)2+2Lδ
+t 2 t t 2 t+1 t 2 t t
+τ −ρ¯ ρ¯
+= (cid:107)xˆ −x (cid:107)2+ ·E [(cid:107)x −x (cid:107)2]+2Lδ.
+2 t t 2 t t+1 t
+Rearranging, we deduce
+β −η β −ρ¯+τ ρ¯−β
+(4.13) t ·E (cid:107)xˆ −x (cid:107)2 ≤ t (cid:107)xˆ −x (cid:107)2+ tδ2+2Lδ
+2 t t t+1 2 t t 2
+β −ρ¯+τ 2L2
+≤ t (cid:107)xˆ −x (cid:107)2+ ,
+2 t t β −ρ¯
+t
+wherethelastinequalityfollowsbymaximizingtheright-hand-sideof (4.13)inδ ∈R.
+After multiplying through by 2 , we arrive at the claimed estimate (4.7).
+βt−η
+We can now establish the convergence guarantees of Algorithm 4.1.
+Theorem 4.3 (Convergencerate). Fixarealρ¯>τ+η andasequence{β } ∈
+t t≥0
+(ρ¯,∞). Then the iterates x generated by Algorithm 4.1 satisfy
+t
+(4.14)
+E(cid:2) ϕ (x ) (cid:3) ≤E[ϕ (x )]− ρ¯−τ −η E(cid:2) (cid:107)∇ϕ (x )(cid:107)2(cid:3) + 2ρ¯L2 ,
+1/ρ¯ t+1 1/ρ¯ t 2ρ¯(β −η) 1/ρ¯ t (β −η)(β −ρ¯)
+t t t
+and the point x returned by Algorithm 3.1 satisfies:
+t∗
+ρ¯(ϕ (x )−min ϕ)+2ρ¯2L2· (cid:80)T 1
+(4.15) E(cid:107)∇ϕ (x )(cid:107)2 ≤ 1/ρ¯ 0 x t=0 (βt−η)(βt−ρ¯) .
+1/ρ¯ t∗ (cid:80)T ρ¯−τ−η
+t=0 2(βt−η)
+√
+In particular, if Algorithm 3.1 uses the constant parameter β =ρ¯+γ−1 T +1, for
+t
+some real γ >0, then the point x satisfies:
+t∗
+(4.16)
+2 (cid:0) ρ¯(ϕ (x )−min ϕ)+2ρ¯2L2γ2(cid:1) (cid:18) ρ¯−η 1 (cid:19)
+E(cid:107)∇ϕ (x )(cid:107)2 ≤ 1/ρ¯ 0 x · + √ .
+1/ρ¯ t∗ ρ¯−τ −η T +1 γ T +1
+Proof. UsingthedefinitionoftheMoreauenvelopeandappealingtotheestimate
+
+--- PAGE 22 ---
+22 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+(4.7) in Lemma 4.2, we deduce
+(cid:104) ρ¯ (cid:105)
+E [ϕ (x )]≤E ϕ(xˆ )+ (cid:107)x −xˆ (cid:107)2
+t 1/ρ¯ t+1 t t 2 t+1 t
+≤ϕ(xˆ )+ ρ¯ ·E (cid:2) (cid:107)x −xˆ (cid:107)2(cid:3) ,
+t 2 t t+1 t
+ρ¯ (cid:20) ρ¯−τ −η 4L2 (cid:21)
+≤ϕ(xˆ )+ (cid:107)xˆ −x (cid:107)2− (cid:107)xˆ −x (cid:107)2+
+t 2 t t β −η t t (β −η)(β −ρ¯)
+t t t
+ρ¯−τ −η 2ρ¯L2
+=ϕ (x )− (cid:107)∇ϕ (x )(cid:107)2+ .
+1/ρ¯ t 2ρ¯(β −η) 1/ρ¯ t (β −η)(β −ρ¯)
+t t t
+Taking expectations with respect to ξ ,...,ξ and using the tower rule yields the
+0 t−1
+claimed inequality (4.14). Unfolding the recursion (4.14) yields:
+T (cid:20) (cid:21) T
+(cid:88) ρ¯−τ −η (cid:88)
+E[ϕ (x )]≤ϕ (x )− E[(cid:107)∇ϕ (x )(cid:107)2] +2ρ¯L2· 1 .
+1/ρ¯ t+1 1/ρ¯ 0 2ρ¯(β
+t
+−η) 1/ρ¯ t (βt−η)(βt−ρ¯)
+t=0 t=0
+Using the inequality ϕ (x )≥minϕ and rearranging yields
+1/ρ¯ t+1
+T T
+(cid:88)ρ¯−τ −η (cid:88) 1
+E[(cid:107)ϕ (x )(cid:107)2]≤2ρ¯(ϕ (x )−minϕ)+4L2ρ¯2
+β −η 1/ρ¯ t 1/ρ¯ 0 (β −η)(β −ρ¯)
+t t t
+t=0 t=0
+Dividing through by (cid:80)T ρ¯−τ−η and recognizing the left side as E[(cid:107)ϕ (x )(cid:107)2]
+t=0 βt−η √ 1/ρ¯ t∗
+yields (4.15). Setting ρ¯ = 2ρ and β = ρ¯+ γ−1 T +1 in (4.15) yields the final
+t
+guarantee (4.16).
+Nextwewilllookatthe“convexsetting”,thatiswhenthemodelsE f(·,ξ)glob-
+ξ
+ally lower abound f, without quadratic error, and the functions f (·,ξ)+r(·) are
+x
+µ-strongly convex. By analogy with the stochastic subgradient method, one would
+expect that Algorithm 4.1 drives the function gap E[ϕ(x ) − ϕ(·))] to zero at the
+t
+rates O(√1 ) and O( 1 ), in the settings µ = 0 and µ >0, respectively. The following
+t µt
+two theorems establish exactly that. Even when specializing to the stochastic prox-
+imal subgradient method, Theorems 4.1 and 4.2 improve on the state of the art. In
+contrast to previous work [19,32], the norms of the subgradients of r do not enter
+the complexity bounds established in Theorem 4.1, while Theorem 4.2 extends the
+nonuniform averaging technique of [62] for strongly convex minimization to the fully
+proximal setting.
+Theorem 4.1 (Convergence rate under convexity).
+Supposethatτ =0andthefunctionsf (·,ξ)+r(·)areconvex. Let{x }betheiterates
+x t
+generated by Algorithm 4.1 and set α =β−1. Then for all T >0, we have
+t t
+(4.17) E (cid:34) ϕ (cid:32) 1 (cid:88) T α x (cid:33) −ϕ(x∗) (cid:35) ≤ 1 2 (cid:107)x 0 −x∗(cid:107)2+L2(cid:80)T t=0 α t 2 ,
+(cid:80)T t=0 αt t=0 t t+1 (cid:80)T t=0 α t
+where x∗ is any minimizer of ϕ. In particular, if Algorithm 3.1 uses the constant
+parameter α t = √ T γ +1 , for some real γ >0, then the estimate holds
+(4.18) E (cid:34) ϕ (cid:32) 1 T (cid:88) +1 x (cid:33) −ϕ(x∗) (cid:35) ≤ 1 2 (cid:107)x 0 − √ x∗(cid:107)2+L2γ2 .
+T+1 t γ T +1
+t=1
+
+--- PAGE 23 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 23
+Proof. Settingη :=0andx:=x∗ intheestimate(4.8)inLemma4.2, andtaking
+expectations of both sides yields
+2α E[ϕ(x )−ϕ(x∗)]≤E(cid:107)x −x∗(cid:107)2−E(cid:2) (cid:107)x −x∗(cid:107)2(cid:3) +2L2α2.
+t t+1 t t+1 t
+Theestimate(4.17)thenfollowsbysummingacrosst=0,...,T,dividingthroughby
+(cid:80)T
+α , and using convexity of ϕ. The estimate (4.18) is immediate from (4.17).
+t=0 t
+The following theorem uses the nonuniform averaging technique from [62].
+Theorem 4.2 (Convergence rate under strong convexity). Suppose that τ = 0
+and the functions f (·,ξ)+r(·) are µ-strongly convex for some µ > 0. Then for all
+x
+T >0, the iterates generated by Algorithm 4.1 with β = µ(t+1) satisfy
+t 2
+E (cid:34) ϕ (cid:32) 2 T (cid:88) +1 (t+1)x (cid:33) −ϕ(x∗) (cid:35) ≤ µ(cid:107)x 0 −x∗(cid:107)2 + 8L2 .
+(T+2)(T+3)−2 t (T +2)2 µ(T +2)
+t=1
+where x∗ is any minimizer of ϕ.
+Proof. Define ∆ := 1E[(cid:107)x−x (cid:107)2]. Setting η :=−µ and x:=x∗ in the estimate
+t 2 t
+(4.8) of Lemma 4.2, taking expectations of both sides, and multiplying through by
+(β +µ)/2 yields
+t
+L2
+E[ϕ(x )−ϕ(x∗)]≤β ∆ −(β +µ)∆ + .
+t+1 t t t t+1 β
+t
+Plugging in β := µ(t+1), multiplying through by t+2, and summing, we get
+t 2
+T T T
+(cid:88) (t+2)E[ϕ(x )−ϕ(x∗)]≤ (cid:88)(cid:16) µ(t+1)(t+2)∆ − µ(t+2)(t+3)∆ (cid:17) + (cid:88)2L2(t+2)
+t+1 2 t 2 t+1 µ(t+1)
+t=0 t=0 t=0
+4L2(T +1)
+≤µ∆ +
+0 µ
+Dividing through by the sum (cid:80)T (t+2)= (T+2)(T+3)−1 and using convexity of ϕ,
+t=0 2
+we deduce
+(cid:34) (cid:32) T (cid:33) (cid:35)
+E ϕ 2 (cid:88) (t+2)x −ϕ(x∗) ≤ µ(cid:107)x0−x∗(cid:107)2 + 8L2(T+1)
+(T+2)(T+3)−2 t+1 (T+2)(T+3)−2 µ((T+2)(T+3)−2)
+t=0
+µ(cid:107)x −x∗(cid:107)2 8L2
+(4.19) ≤ 0 + ,
+(T +2)2 µ(T +2)
+where(4.19)usestheestimate(T+2)(T+3)−2≥(T+2)2. Theproofiscomplete.
+4.2. Algorithmic examples. Let us now look at the consequences of Theo-
+rem 4.3 and Theorem 4.1. We begin with the algorithms briefly mentioned in the
+introduction: stochastic proximal point, prox-linear, and proximal subgradient. In
+each case, we list the standard assumptions under which the methods are applicable,
+and then verify properties (B1)-(B4) for some τ,η,L≥0. Complexity guarantees for
+each method then follow immediately from Theorem 4.3. We then describe the prob-
+lem of minimizing the expectation of a pointwise maximum of convex function (e.g.
+Conditional Value-at-Risk), and describe a natural model based algorithm for the
+problem. Convergence guarantees in function values then follow from Theorem 4.1.
+
+--- PAGE 24 ---
+24 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+Stochastic proximal point. Consider the optimization problem (4.1) under
+the following assumptions.
+(C1) It is possible to generate i.i.d. realizations ξ ,ξ ,...∼P.
+1 2
+(C2) There is an open convex set U containing domr and a measurable function
+(x,y,ξ)(cid:55)→f (y,ξ) defined on U×U×Ω satisfying E [f (y,ξ)]=f(y) for all
+x ξ x
+x,y ∈U.
+(C3) Each function r(·)+f (·,ξ) is ρ-weakly convex ∀x∈U, a.e. ξ ∈Ω.
+x
+(C4) There exists a measurable function L: Ω → R satisfying (cid:112)E [L(ξ)2] ≤ L
++ ξ
+and such that
+f (x,ξ)−f (y,ξ)≤L(ξ)(cid:107)x−y(cid:107),
+x x
+for all x,y ∈U and a.e. ξ ∈Ω.
+The stochastic proximal point method is Algorithm 4.1 with the models f (y,ξ). It
+x
+is immediate to see that (B1)-(B4) hold with τ =0 and η =ρ.
+Stochastic proximal subgradient. We next slightly loosen the assumptions
+(A1)-(A3) for the proximal stochastic subgradient method, by allowing r to be non-
+convex,andshowhowtheseassumptionsimply(B1)-(B4). Considertheoptimization
+problem (4.1), and let us assume that the following properties are true.
+(D1) It is possible to generate i.i.d. realizations ξ ,ξ ,...∼P.
+1 2
+(D2) The function f is ρ -weakly convex and r is ρ -weakly convex, for some
+1 2
+ρ ,ρ ≥0.
+1 2
+(D3) There is an open convex set U containing domr and a measurable mapping
+G: U ×Ω→Rd satisfying E [G(x,ξ)]∈∂f(x) for all x∈U.
+ξ
+(D4) There is a real L≥0 such that the inequality, E (cid:2) (cid:107)G(x,ξ)(cid:107)2(cid:3) ≤L2, holds for
+ξ
+all x∈U.
+The stochastic subgradient method is Algorithm 4.1 with the linear models
+f (y,ξ)=f(x)+(cid:104)G(x,ξ),y−x(cid:105).
+x
+Observe that (B1) and (B3) with η = ρ are immediate from the definitions; (B2)
+2
+with τ = ρ follows from the discussion in [22, Section 2]. Assumption (B4) is also
+1
+immediate from (D4).
+Stochastic prox-linear. Consider the optimization problem (4.1) with
+f(x)=E (cid:2) h (cid:0) c(x,ξ),ξ (cid:1)(cid:3) .
+ξ∼P
+We assume that there exists an open convex set U containing domr such that the
+following properties are true.
+(E1) It is possible to generate i.i.d. realizations ξ ,ξ ,...∼P.
+1 2
+(E2) The assignments h: Rm×Ω→R and c: U ×Ω→Rm are measurable.
+(E3) Thefunctionrisρ-weaklyconvex,andthereexistsquareintegrablefunctions
+(cid:96),γ,M: Ω → R such that for a.e. ξ ∈ Ω, the function z (cid:55)→ h(z,ξ) is convex
+and (cid:96)(ξ)-Lipschitz, the map x (cid:55)→ c(x,ξ) is C1-smooth with γ(ξ)-Lipschitz
+Jacobian, and the inequality, (cid:107)∇c(x,ξ)(cid:107) ≤ M(ξ), holds for all x ∈ U and
+op
+a.e. ξ ∈Ω.
+The stochastic prox-linear method [31] is Algorithm 4.1 with the convex models
+(cid:0) (cid:1)
+f (y,ξ)=h c(x,ξ)+∇c(x,ξ)(y−x),ξ .
+x
+Observethat(B1)and(B3)holdtriviallywithη =ρ. Assumption(B2)holdswithτ =
+(cid:112)E
+[(cid:96)(ξ)]2
+(cid:112)E
+[γ(ξ)2] by [31, Lemma 3.12]. Assumption (E3) also directly implies
+ξ ξ
+(B4) with L=
+(cid:112)E
+[(cid:96)(ξ)]2
+(cid:112)E
+[M(ξ)2].
+ξ ξ
+
+--- PAGE 25 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 25
+Expectation of convex monotone compositions. As an application of The-
+orem 4.1, suppose we wish to optimize the problem (4.1), where r is convex and f is
+given by
+f(x)=E [h(c(x,ξ),ξ)],
+ξ
+Suppose that h(·,ξ): R→R and c(·,ξ): R→R are convex, and h(·,ξ) is also nonde-
+creasing. Notethatwedonotassumesmoothnessofc(·,x)andthereforethisproblem
+class does not fall with the composite framework discussed above.
+We assume that there exists an open convex set U containing domr such that
+the following properties are true.
+(F1) It is possible to generate i.i.d. realizations ξ ,ξ ,...∼P.
+1 2
+(F2) The assignments h: R×Ω → R and c: U ×Ω → Rm are measurable, the
+functionsh(·,ξ), c(·,ξ), andr(·)areconvex, andh(·,ξ)isalsonondecreasing.
+(F3) ThereisameasurablemappingG: U×Ω→Rd satisfyingG(x,ξ)∈∂ c(x,ξ)
+x
+for all x∈U.
+(F4) Thereexistsquareintegrablefunctions(cid:96),M: Ω→Rsuchthatfora.e. ξ ∈Ω,
+the function z (cid:55)→ h(z,ξ) is (cid:96)(ξ)-Lipschitz and the map x (cid:55)→ c(x,ξ) is M(ξ)-
+Lipschitz for a.e. ξ ∈Ω.
+One reasonable class of models then reads:
+f (y,ξ)=h(c(x,ξ)+(cid:104)G(x,ξ),y−x(cid:105),ξ).
+x
+Assumption (B1) is immediate from (F1). Assumption (F2) directly implies (B2)
+with τ = 0 and (B3) with η = 0. Finally (F4) readily implies (B2) with L =
+(cid:112)E
+[(cid:96)(ξ)]2
+(cid:112)E
+[M(ξ)2]. Thus the stochastic model-based algorithm (Algorithm 4.1)
+ξ ξ
+enjoystheO(√1 )convergenceguaranteeinexpectedfunctionvaluegap(Theorem4.1).
+t
+As an illustration, consider the Conditional Value-at-Risk problem, discussed in
+Example 2.6:
+min (1−α)γ+E [(g(x,ξ)−γ)+]+r(x),
+ξ∼P
+γ∈R,x∈Rd
+under the assumption that the loss g(·,ξ) is convex. Then given an iterate (x ,γ ),
+t t
+the stochastic model based algorithm would sample ξ ∼ P, choose a subgradient
+t
+v ∈∂ g(x ,ξ ) and perform the simple update
+t x t t
+(x ,γ )= argmin (1−α)γ+[g(x ,ξ )+(cid:104)v ,y−x (cid:105)−γ]++r(y)
+t+1 t+1 t t t t
+γ∈R,y∈Rd
+β
++ t((cid:107)y−x (cid:107)2+(cid:107)γ−γ (cid:107)2).
+2 t t
+5. Numerical Illustrations. Inthissection,weillustrateourthreerunningex-
+amples (stochastic subgradient, prox-linear, prox-point) on phase retrieval and blind
+deconvolution problems, outlined in Section 2.1. In particular, our experiments com-
+plement the recent paper [31], which performs an extensive numerical study of the
+stochastic subgradient and prox-linear algorithms on the phase retrieval problem.
+Our main goal in this section is to illustrate that the update rules for all three
+algorithms,haveessentiallythesamecomputationalcost. Indeed,thesubproblemsfor
+thestochasticprox-pointandprox-linearalgorithmshaveaclosedformsolution. Note
+that our theoretical guarantees (Theorem 4.3) imply essentially the same worst-case
+complexityforthestochasticsubgradient,prox-linear,andproximalpointalgorithms.
+In contrast, our numerical results on both problems clearly show that the latter two
+algorithms are much better empirically both in terms of speed and robustness to the
+choice of stepsize.
+
+--- PAGE 26 ---
+26 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+5.1. Phase retrieval. The experimental set-up for the phase retrieval problem
+is as follows. We generate standard Gaussian measurements a ∼ N(0,I ), for
+i d×d
+i = 1,...,m; generate the target signal x¯ and initial point x uniformly on the unit
+0
+sphere; andsetb =(cid:104)a ,x¯(cid:105)2 foreachi=1,...,m. Wethenapplythethreestochastic
+i i
+algorithms to the problem
+m
+1 (cid:88)
+min |(cid:104)a ,x(cid:105)2−b |.
+x∈Rd m i i
+i=1
+Each step of the algorithms is trivial to implement. Since the three methods only use
+one data point at a time, let us define the function
+g(x)=|(cid:104)a,x(cid:105)2−b|,
+for a fixed vector a∈Rd and a real b≥0.
+Stochastic subgradient. The stochastic subgradient method simply needs to eval-
+uate an element of the subdifferential
+(cid:26) sign((cid:104)a,x(cid:105)2−b), if (cid:104)a,x(cid:105)2 (cid:54)=b (cid:27)
+∂g(x)=2(cid:104)a,x(cid:105)a· .
+[−1,1], o.w.
+Stochasticprox-linear. Thestochasticprox-linearmethodneedstosolvesubprob-
+lems of the form
+1
+argmin |(cid:104)a,x(cid:105)2+2(cid:104)a,x(cid:105)(cid:104)a,∆(cid:105)−b|+ (cid:107)∆(cid:107)2.
+2λ
+∆∈Rd
+Then the next iterate is defined to be x+∆. Setting γ = λ((cid:104)a,x(cid:105)2 −b) and ζ =
+2λ(cid:104)a,x(cid:105)a, we therefore seek to solve the problem
+1
+(5.1) argmin |γ+(cid:104)ζ,∆(cid:105)|+ (cid:107)∆(cid:107)2.
+2
+∆∈Rd
+An explicit solution ∆∗ to this subproblem follows from a standard Lagrangian cal-
+culation, and is recorded for example in [31, Section 4]:
+(cid:18) (cid:19)
+−γ
+(5.2) ∆∗ =proj ζ.
+[−1,1] (cid:107)ζ(cid:107)2
+Stochastic proximal point. Finally,thestochasticproximalpointmethodrequires
+solving the problem
+1
+(5.3) argmin |(cid:104)a,y(cid:105)2−b|+ (cid:107)y−x(cid:107)2
+2λ
+y
+Let us compute the candidate solutions using first-order optimality conditions:
+(cid:26) sign((cid:104)a,y(cid:105)2−b), if (cid:104)a,y(cid:105)2 (cid:54)=b (cid:27)
+(5.4) λ−1(x−y)∈2(cid:104)a,y(cid:105)a· .
+[−1,1], o.w.
+An easy computation shows that there are at most four point y that satisfy (5.4):
+(cid:40) (cid:18) (cid:19) (cid:32) √ (cid:33) (cid:41)
+2λ(cid:104)a,x(cid:105) (cid:104)a,x(cid:105)± b
+x− a, x− a .
+2λ(cid:107)a(cid:107)2±1 (cid:107)a(cid:107)2
+
+--- PAGE 27 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 27
+Therefore we may set the next iterate to be the candidate solution y with the lowest
+function value for the subproblem (5.3).
+Weperformthreesetsofexperimentscorrespondingto(d,m)=(10,30),(50,150),
+(100,300),andrecordtheresultinFigure3. Thedashedbluelineindicatestheinitial
+functional error. In each set of experiments, we use 100 equally spaced step-size
+parameters β−1 between 10−4 and 1. The figures on the left record the function gap
+t
+after 100 passes through the data, averaged over 15 rounds. The figures on the right
+output the number of epochs used by the stochastic prox-linear and proximal point
+methods to find a point achieving 10−4 functional suboptimality, averaged over 15
+rounds. It is clear from the figures that the stochastic prox-linear and proximal point
+algorithms perform much better and are more robust to the choice of the step-size
+parameter than the stochastic subgradient method.
+Fig. 3: Bottom to top: (d,m) = (10,30),(50,150),(100,300). The dashed blue line
+indicates the initial functional error.
+
+--- PAGE 28 ---
+28 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+5.2. Blind deconvolution. We next consider the problem of blind deconvolu-
+tion. Theexperimentalset-upisasfollows. WegeneratestandardGaussianmeasure-
+ments u ∼ N(0,I ) and v ∼ N(0,I ), for i = 1,...,m; generate the target
+i d1×d1 i d2×d2
+signalx¯ uniformlyontheunitsphere; andsetb =(cid:104)u ,x¯(cid:105)(cid:104)v ,x¯(cid:105)foreachi=1,...,m.
+i i i
+The problem formulation reads:
+m
+1 (cid:88)
+min |(cid:104)u ,x(cid:105)(cid:104)v ,y(cid:105)−b |,
+x,y m i i i
+i=1
+Again, since the three methods access one data point at a time, define the function
+g(x,y)=|(cid:104)u,x(cid:105)(cid:104)v,y(cid:105)−b|
+for some vectors u∈Rd and v ∈Rd and real b∈R.
+1 2
+Stochastic subgradient. The stochastic subgradient method, in each iteration,
+evaluates an element of the subdifferential
+(cid:26) (cid:27)
+sign((cid:104)u,x(cid:105)(cid:104)v,y(cid:105)−b), if (cid:104)u,x(cid:105)(cid:104)v,y(cid:105)=(cid:54) b
+∂g(x,y)=((cid:104)v,y(cid:105)u,(cid:104)u,x(cid:105)v)· .
+[−1,1], o.w.
+Stochasticprox-linear. Thestochasticprox-linearmethodneedstosolvesubprob-
+lems of the form:
+1
+argmin |(cid:104)u,x(cid:105)(cid:104)v,y(cid:105)+(cid:104)v,y(cid:105)(cid:104)u,∆ (cid:105)+(cid:104)u,x(cid:105)(cid:104)v,∆ (cid:105)−b|+ ((cid:107)∆ (cid:107)2+(cid:107)∆ (cid:107)2).
+1 2 2λ 1 2
+∆1,∆2
+Once a solution (∆ ,∆ ) is found, the next iterate is (x+∆ ,y+∆ ). Clearly, we
+1 2 1 2
+may rewrite the prox-linear subproblem in the form (5.1) under the identification
+∆=(∆ ,∆ ), ζ =λ((cid:104)v,y(cid:105)u,(cid:104)u,x(cid:105)v), and γ =λ((cid:104)u,x(cid:105)(cid:104)v,y(cid:105)−b). We may then read
+1 2
+off the solution directly from (5.2).
+Stochastic proximal point. Finally,thestochasticproximalpointmethodrequires
+solving the problem
+1 1
+(5.5) argmin |(cid:104)u,x(cid:105)(cid:104)v,y(cid:105)−b|+ (cid:107)x−x (cid:107)2+ (cid:107)y−y (cid:107)2.
+2λ 0 2λ 0
+x,y
+Let us enumerate the critical points. Writing out the optimality conditions for (x,y),
+there are two cases to consider. In the first case (cid:104)u,x(cid:105)(cid:104)v,y(cid:105)(cid:54)=b, it is straightforward
+to show that the possible critical point have the form
+(cid:18) ±(cid:104)v,y (cid:105)−λ(cid:107)v(cid:107)2(cid:104)u,x (cid:105) (cid:19)
+x=x −λ 0 0 u
+0 1−λ2(cid:107)u(cid:107)2(cid:107)v(cid:107)2
+(5.6)
+(cid:18) ±(cid:104)u,x (cid:105)−λ(cid:107)u(cid:107)2(cid:104)v,y (cid:105) (cid:19)
+y =y −λ 0 0 v
+0 1−λ2(cid:107)u(cid:107)2(cid:107)v(cid:107)2
+Indeed, supposeforthemoment(cid:104)u,x(cid:105)(cid:104)v,y(cid:105)>b. Thenoptimalityconditionsfor(5.5)
+imply
+(5.7) x=x −λ(cid:104)v,y(cid:105)u, y =y −λ(cid:104)u,x(cid:105)v
+0 0
+Thus if we determine (cid:104)v,y(cid:105) and (cid:104)u,x(cid:105), we will have an explicit formula for (x,y).
+Taking the dot product of the first equation with u and the second with v yields
+λ(cid:104)v,y(cid:105)(cid:107)u(cid:107)2 =(cid:104)u,x (cid:105)−(cid:104)u,x(cid:105), λ(cid:104)u,x(cid:105)(cid:107)v(cid:107)2 =(cid:104)v,y (cid:105)−(cid:104)v,y(cid:105).
+0 0
+
+--- PAGE 29 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 29
+Solving for (cid:104)v,y(cid:105) and (cid:104)u,x(cid:105), we get
+(cid:104)u,x (cid:105)−λ(cid:107)u(cid:107)2(cid:104)v,y (cid:105) (cid:104)v,y (cid:105)−λ(cid:107)v(cid:107)2(cid:104)u,x (cid:105)
+(cid:104)u,x(cid:105)= 0 0 , (cid:104)v,y(cid:105)= 0 0 .
+1−λ2(cid:107)u(cid:107)2(cid:107)v(cid:107)2 1−λ2(cid:107)u(cid:107)2(cid:107)v(cid:107)2
+Combining these expressions with (5.7), we deduce that x and y can be expressed as
+in (5.6). The setting (cid:104)u,x(cid:105)(cid:104)v,y(cid:105)>b is completely analogous.
+In the second case, suppose (cid:104)u,x(cid:105)(cid:104)v,y(cid:105) = b. Then optimality condition for (5.5)
+imply that there exists γ such that
+x=x −γ(cid:104)v,y(cid:105)u, y =y −γ(cid:104)u,x(cid:105)v, b=(cid:104)u,x(cid:105)(cid:104)v,y(cid:105).
+0 0
+Wemustsolvethissystemofequationsforγ,η :=(cid:104)u,x(cid:105),andδ :=(cid:104)v,y(cid:105). Substituting
+the third equation into the first yields:
+(cid:18) (cid:19)
+b
+(5.8) x=x −γ u, y =y −γηv, b=ηδ.
+0 η 0
+Taking the dot product of the first equation with u and the second with v yields
+(cid:18) (cid:19)
+b b
+η =(cid:104)u,x (cid:105)−γ (cid:107)u(cid:107)2, =(cid:104)v,y (cid:105)−γη(cid:107)v(cid:107)2.
+0 η η 0
+Solving the first equation for γ, we get the expression γ =
+η(cid:104)u,x0(cid:105)−η2
+. Plugging
+b(cid:107)u(cid:107)2
+this formula into the second equation and clearing the denominator, we arrive at the
+quartic polynomial
+0=η4(cid:107)v(cid:107)2−η3(cid:107)v(cid:107)2(cid:104)u,x (cid:105)+bη(cid:107)u(cid:107)2(cid:104)v,y (cid:105)−b2(cid:107)u(cid:107)2.
+0 0
+Thusafterfindingeachrootη,wemaysetγ =
+η(cid:104)u,x0(cid:105)−η2
+,andthenobtainanexplicit
+b(cid:107)u(cid:107)2
+formula for (x,y) using (5.8).
+Our numerical experiments are similar to those for phase retrieval. We perform
+three sets of experiments corresponding to (d ,d ,m) = (10,10,30), (50,50,200),
+1 2
+(100,100,400), and record the result in Figure 4. The dashed blue line indicates the
+initialfunctionalerror. Ineachsetofexperiments,weuse100equallyspacedstep-size
+parameters β−1 between 10−4 and 1. The figures on the left record the function gap
+t
+after 100 passes through the data, averaged over 10 rounds. The figures on the right
+output the number of epochs used by the stochastic prox-linear and proximal point
+methods to find a point achieving 10−4 functional suboptimality, averaged over 10
+rounds. As in phase retrieval, it is clear from the figure that the stochastic prox-
+linearandproximalpointalgorithmsperformmuchbetterandaremorerobusttothe
+choice of the step-size parameter than the stochastic subgradient method.
+Acknowledgments. The authors thank John Duchi for his careful reading of
+the initial version of this manuscript.
+REFERENCES
+[1] M. Abadi, A. Agarwal, P. Barham, E. Brevdo, and et al., TensorFlow: Large-scale
+machinelearningonheterogeneoussystems,2015,https://www.tensorflow.org/. Software
+availablefromtensorflow.org.
+[2] E. Abbe, A. Bandeira, A. Bracher, and A. Singer,Decoding binary node labels from cen-
+sored edge measurements: phase transition and efficient recovery, IEEE Trans. Network
+Sci.Eng.,1(2014),pp.10–22,https://doi.org/10.1109/TNSE.2014.2368716.
+
+--- PAGE 30 ---
+30 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+Fig. 4: Bottom to top: (d ,d ,m) = (10,10,50),(50,50,200),(100,100,400). The
+1 2
+dashed blue line indicates the initial functional error.
+[3] Z. Allen-Zhu, Katyusha: The First Direct Acceleration of Stochastic Gradient Methods, in
+STOC,2017.
+[4] Z. Allen-Zhu, Natasha 2: Faster non-convex optimization than sgd, arXiv preprint
+arXiv:1708.08694,(2017).
+[5] Z.Allen-Zhu,Howtomakegradientssmallstochastically,PreprintarXiv:1801.02982(version
+1),(2018).
+[6] A. Bandeira, N. Boumal, and V. Voroninski, On the low-rank approach for semidefinite
+programsarisinginsynchronizationandcommunitydetection,inProceedingsofthe29th
+ConferenceonLearningTheory,COLT2016,NewYork,June23-26,2016,2016,pp.361–
+382,http://jmlr.org/proceedings/papers/v49/bandeira16.html.
+[7] A. Ben-Tal and M. Teboulle, Expected utility, penalty functions, and duality in stochastic
+nonlinearprogramming,Manage.Sci.,32(1986),pp.1445–1466,https://doi.org/10.1287/
+mnsc.32.11.1445,http://dx.doi.org/10.1287/mnsc.32.11.1445.
+[8] A. Ben-Tal and M. Teboulle, An old-new concept of convex risk measures: the op-
+timized certainty equivalent, Math. Finance, 17 (2007), pp. 449–476, https://doi.org/
+
+--- PAGE 31 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 31
+10.1111/j.1467-9965.2007.00311.x, https://doi-org.offcampus.lib.washington.edu/10.1111/
+j.1467-9965.2007.00311.x.
+[9] P. Bianchi, Ergodic convergence of a stochastic proximal point algorithm, SIAM Journal on
+Optimization,26(2016),pp.2235–2260.
+[10] J.Burke,Descentmethodsforcompositenondifferentiableoptimizationproblems,Math.Pro-
+gramming,33(1985),pp.260–279.
+[11] E. Cande`s, X. Li, Y. Ma, and J. Wright, Robust principal component analysis?, J. ACM,
+58 (2011), pp. Art. 11, 37, https://doi.org/10.1145/1970392.1970395, http://dx.doi.org/
+10.1145/1970392.1970395.
+[12] E. Cande`s, X. Li, and M. Soltanolkotabi, Phase retrieval via Wirtinger flow: theory and
+algorithms, IEEE Trans. Inform. Theory, 61 (2015), pp. 1985–2007, https://doi.org/10.
+1109/TIT.2015.2399924.
+[13] T. F. Chan and C.-K. Wong, Total variation blind deconvolution, IEEE Transactions on
+ImageProcessing,7(1998),pp.370–375,https://doi.org/10.1109/83.661187.
+[14] V. Chandrasekaran, S. Sanghavi, P. A. Parrilo, and A. Willsky, Rank-sparsity in-
+coherence for matrix decomposition, SIAM J. Optim., 21 (2011), pp. 572–596, https:
+//doi.org/10.1137/090761793,http://dx.doi.org/10.1137/090761793.
+[15] Y. Chen and E. Cande`s,Solving random quadratic systems of equations is nearly as easy as
+solvinglinearsystems,Comm.PureAppl.Math.,70(2017),pp.822–883,https://doi-org.
+offcampus.lib.washington.edu/10.1002/cpa.21638.
+[16] Y.Chen,Y.Chi,andA.Goldsmith,Exactandstablecovarianceestimationfromquadratic
+sampling via convex programming, IEEE Transactions on Information Theory, 61 (2015),
+pp.4034–4059.
+[17] Y. Chen, Y. Chi, and A. J. Goldsmith, Exact and stable covariance estimation from
+quadratic sampling via convex programming, IEEE Trans. Inform. Theory, 61 (2015),
+pp. 4034–4059, https://doi.org/10.1109/TIT.2015.2429594, https://doi-org.offcampus.lib.
+washington.edu/10.1109/TIT.2015.2429594.
+[18] F. Clarke, Y. Ledyaev, R. Stern, and P. Wolenski, Nonsmooth Analysis and Control
+Theory,TextsinMath.178,Springer,NewYork,1998.
+[19] J. Cruz,On proximal subgradient splitting method for minimizing the sum of two nonsmooth
+convexfunctions,Set-ValuedVar.Anal.,25(2017),pp.245–263,https://doi.org/10.1007/
+s11228-016-0376-5.
+[20] D.DavisandD.Drusvyatskiy,Complexityoffindingnear-stationarypointsofconvexfunc-
+tions stochastically,arXiv:1802.08556,(2018).
+[21] D.DavisandD.Drusvyatskiy,Stochastic model-based minimization of weakly convex func-
+tions,PreprintarXiv:1803.06523,(2018).
+[22] D.DavisandD.Drusvyatskiy,StochasticsubgradientmethodconvergesattherateO(k−1/4)
+on weakly convex functions,PreprintarXiv:1802.02988,(2018).
+[23] D.Davis,D.Drusvyatskiy,andC.Paquette,Thenonsmoothlandscape of phaseretrieval,
+PreprintarXiv:1711.03247,(2017).
+[24] D. Davis and B. Grimmer, Proximally guided stochastic method for nonsmooth, nonconvex
+problems,PreprintarXiv:1707.03505,(2017).
+[25] O. Devolder, F. Glineur, and Y. Nesterov, First-order methods of smooth convex opti-
+mization with inexact oracle, Mathematical Programming, 146 (2014), pp. 37–75, https:
+//doi.org/10.1007/s10107-013-0677-5,https://doi.org/10.1007/s10107-013-0677-5.
+[26] D. Drusvyatskiy, The proximal point method revisited, To appear in SIAG/OPT Views and
+News,arXiv:1712.06038,(2018).
+[27] D.Drusvyatskiy,A.Ioffe,andA.Lewis,Nonsmoothoptimizationusingtaylor-likemodels:
+error bounds, convergence, and termination criteria,PreprintarXiv:1610.03446,(2016).
+[28] D. Drusvyatskiy and A. Lewis, Error bounds, quadratic growth, and linear convergence of
+proximal methods,ToappearinMath.Oper.Res.,arXiv:1602.06661,(2016).
+[29] D. Drusvyatskiy and C. Paquette, Efficiency of minimizing compositions of convex func-
+tions and smooth maps,MathematicalProgramming,(2018).
+[30] J.DuchiandF.Ruan,Solving(most)ofasetofquadraticequalities: Compositeoptimization
+for robust phase retrieval,PreprintarXiv:1705.02356,(2017).
+[31] J. Duchi and F. Ruan, Stochastic methods for composite optimization problems, Preprint
+arXiv:1703.08570,(2017).
+[32] J.DuchiandY.Singer,Efficientonlineandbatchlearningusingforwardbackwardsplitting,
+J.Mach.Learn.Res.,10(2009),pp.2899–2934.
+[33] P. Dvurechensky, Gradient method with inexact oracle for composite non-convex optimiza-
+tion,arXiv:1703.09180,(2017).
+[34] Y.EldarandS.Mendelson,Phase retrieval: stability and recovery guarantees,Appl.Com-
+
+--- PAGE 32 ---
+32 DAMEKDAVISANDDMITRIYDRUSVYATSKIY
+put. Harmon. Anal., 36 (2014), pp. 473–494, https://doi.org/10.1016/j.acha.2013.08.003,
+http://dx.doi.org/10.1016/j.acha.2013.08.003.
+[35] S. Ghadimi and G. Lan, Stochastic first- and zeroth-order methods for nonconvex stochastic
+programming,SIAMJ.Optim.,23(2013),pp.2341–2368.
+[36] S. Ghadimi, G. Lan, and H. Zhang, Mini-batch stochastic approximation methods for non-
+convex stochastic composite optimization,Math.Program.,155(2016),pp.267–305.
+[37] A. Juditsky and A. Nemirovski, First order methods for nonsmooth convex large-scale op-
+timization, I: General purpose methods, in Optimization for Machine Learning, S. Sra,
+S.Nowozin,andS.Write,eds.,MITPress,2011,ch.1,pp.266–290.
+[38] L. Lei, C. Ju, J. Chen, and M. I. Jordan, Non-convex finite-sum optimization via scsg
+methods,inAdvancesinNeuralInformationProcessingSystems,2017,pp.2345–2355.
+[39] A. Levin, Y. Weiss, F. Durand, and W. T. Freeman, Understanding blind deconvolution
+algorithms, IEEE Transactions on Pattern Analysis and Machine Intelligence, 33 (2011),
+pp.2354–2367,https://doi.org/10.1109/TPAMI.2011.148.
+[40] A. Lewis and S. Wright, A proximal method for composite minimization, Math. Program.,
+(2015), pp. 1–46, https://doi.org/10.1007/s10107-015-0943-9, http://dx.doi.org/10.1007/
+s10107-015-0943-9.
+[41] S. Ling and T. Strohmer, Self-calibration and biconvex compressive sensing, Inverse Prob-
+lems, 31 (2015), pp. 115002, 31, https://doi.org/10.1088/0266-5611/31/11/115002, https:
+//doi.org/10.1088/0266-5611/31/11/115002.
+[42] J.Mairal,J.Ponce,G.Sapiro,A.Zisserman,andF.Bach,Superviseddictionarylearning,
+in Advances in Neural Information Processing Systems 21, D. Koller, D. Schuurmans,
+Y. Bengio, and L. Bottou, eds., Curran Associates, Inc., 2009, pp. 1033–1040, http://
+papers.nips.cc/paper/3448-supervised-dictionary-learning.pdf.
+[43] J.-J. Moreau, Proximit´e et dualit´e dans un espace hilbertien, Bull. Soc. Math. France,
+93(1965),pp.273–299,http://www.numdam.org.offcampus.lib.washington.edu/item?id=
+BSMF 1965 93 273 0.
+[44] A. Nemirovski, A. Juditsky, G. Lan, and A. Shapiro, Robust stochastic approximation
+approach to stochastic programming,SIAMJ.Optim.,19(2009),pp.1574–1609.
+[45] A.NemirovskyandD.Yudin,Problem complexity and method efficiency in optimization,A
+Wiley-IntersciencePublication,JohnWiley&Sons,Inc.,NewYork,1983.
+[46] Y.Nesterov,Howtomakethegradientssmall,OPTIMA,MPSNewsletter,(2012),pp.10–11.
+[47] Y. Nesterov, Gradient methods for minimizing composite functions, Math. Program., 140
+(2013), pp. 125–161, https://doi.org/10.1007/s10107-012-0629-5, http://dx.doi.org/10.
+1007/s10107-012-0629-5.
+[48] Y. Nesterov, Universal gradient methods for convex optimization problems, Mathematical
+Programming,152(2015),pp.381–404.
+[49] E. Nurminskii, Minimization of nondifferentiable functions in the presence of noise, Cyber-
+netics, 10 (1974), pp. 619–621, https://doi.org/10.1007/BF01071541, https://doi.org/10.
+1007/BF01071541.
+[50] E. A. Nurminskii, The quasigradient method for the solving of the nonlinear programming
+problems,Cybernetics,9(1973),pp.145–150,https://doi.org/10.1007/BF01068677,https:
+//doi.org/10.1007/BF01068677.
+[51] R. Poliquin and R. Rockafellar,Amenable functions in optimization,inNonsmoothopti-
+mization: methods and applications (Erice, 1991), Gordon and Breach, Montreux, 1992,
+pp.338–353.
+[52] R. Poliquin and R. Rockafellar, Prox-regular functions in variational analysis, Trans.
+Amer.Math.Soc.,348(1996),pp.1805–1838.
+[53] S.J.Reddi,S.Sra,B.Poczos,andA.J.Smola,Proximalstochasticmethodsfornonsmooth
+nonconvexfinite-sumoptimization,inAdvancesinNeuralInformationProcessingSystems,
+2016,pp.1145–1153.
+[54] H. Robbins and S. Monro, A stochastic approximation method, Ann. Math. Statistics, 22
+(1951),pp.400–407.
+[55] R. Rockafellar,Convex Analysis,PrincetonUniversityPress,1970.
+[56] R.Rockafellar,FavorableclassesofLipschitz-continuousfunctionsinsubgradientoptimiza-
+tion,inProgressinnondifferentiableoptimization,vol.8ofIIASACollaborativeProc.Ser.
+CP-82,Int.Inst.Appl.Sys.Anal.,Laxenburg,1982,pp.125–143.
+[57] R. Rockafellar and S. Uryasev, The fundamental risk quadrangle in risk management,
+optimization and statistical estimation,SurveysinOperationsResearchandManagement
+Science, 18 (2013), pp. 33 – 53, https://doi.org/https://doi.org/10.1016/j.sorms.2013.03.
+001,http://www.sciencedirect.com/science/article/pii/S1876735413000032.
+[58] R. Rockafellar and R.-B. Wets, Variational Analysis, Grundlehren der mathematischen
+
+--- PAGE 33 ---
+STOCHASTICMODEL-BASEDMINIMIZATIONOFWEAKLYCONVEXFUNCTIONS 33
+Wissenschaften,Vol317,Springer,Berlin,1998.
+[59] R.T.Rockafellar,Convexanalysis,PrincetonMathematicalSeries,No.28,PrincetonUni-
+versityPress,Princeton,N.J.,1970.
+[60] R. T. Rockafellar and S. Uryasev, Optimization of conditional value-at-risk, Journal of
+Risk,2(2000),pp.21–41.
+[61] E. Ryu and S. Boyd, Stochastic proximal iteration: a non-asymptotic improvement upon
+stochastic gradient descent,Preprintwww.math.ucla.edu/∼eryu/.
+[62] M. Schmidt, N. L. Roux, and F. Bach, A simpler approach to obtaining an O(1/t) conver-
+gence rate for the projected stochastic subgradient method,arXiv:1212.2002,(2013).
+[63] A. Singer, Angular synchronization by eigenvectors and semidefinite programming, Appl.
+Comput.Harmon.Anal.,30(2011),pp.20–36,https://doi.org/10.1016/j.acha.2010.02.001.
+[64] J.Sun,Q.Qu,andJ.Wright,Ageometricanalysisofphaseretrieval,ToappearinFound.
+Comp.Math.,arXiv:1602.06664,(2017).
+[65] I.TosicandP.Frossard,Dictionarylearning,IEEESignalProcessingMagazine,28(2011),
+pp.27–38,https://doi.org/10.1109/MSP.2010.939537.
+[66] M. Wang, E. Fang, and H. Liu, Stochastic compositional gradient descent: algo-
+rithms for minimizing compositions of expected-value functions, Math. Program., 161
+(2017),pp.419–449,https://doi.org/10.1007/s10107-016-1017-3,https://doi.org/10.1007/
+s10107-016-1017-3.
+[67] Y.XuandW.Yin,Blockstochasticgradientiterationforconvexandnonconvexoptimization,
+SIAMJ.Optim.,25(2015),pp.1686–1716.
