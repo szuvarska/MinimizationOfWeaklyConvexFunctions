@@ -50,7 +50,7 @@ def generate_blind_deconv_data(d1, d2, m, seed=0):
 
 
 def run_single(prob, data, d_total, beta, n_epochs, m, seed):
-    """Run one trial. Returns (final_obj, epoch_to_target or None)."""
+    """Run one trial. Returns (best_obj, epoch_to_target or None)."""
     torch.manual_seed(seed)
     z_init = torch.randn(d_total)
     z_init = z_init / torch.norm(z_init)
@@ -70,8 +70,8 @@ def run_single(prob, data, d_total, beta, n_epochs, m, seed):
     )
     solver.run()
 
-    final_obj = (
-        solver.history["obj_values"][-1]
+    best_obj = (
+        min(solver.history["obj_values"])
         if solver.history["obj_values"]
         else float("inf")
     )

@@ -52,7 +52,7 @@ def run_model_based(method_cls, data, d, beta, n_epochs, m, seed):
     )
     solver.run()
     return (
-        solver.history["obj_values"][-1]
+        min(solver.history["obj_values"])
         if solver.history["obj_values"]
         else float("inf")
     )
