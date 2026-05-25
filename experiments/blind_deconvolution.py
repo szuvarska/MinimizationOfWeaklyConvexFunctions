@@ -93,7 +93,7 @@ def run_config(d1, d2, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=
     data, true_z = generate_blind_deconv_data(d1, d2, m, seed=data_seed)
     d_total = d1 + d2
 
-    inv_betas = np.linspace(1e-4, 1.0, n_stepsizes)
+    inv_betas = np.logspace(-4, 0, n_stepsizes)
     beta_values = 1.0 / inv_betas
 
     method_classes = {
