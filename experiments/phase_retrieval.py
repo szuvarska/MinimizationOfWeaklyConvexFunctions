@@ -82,7 +82,7 @@ def run_config(d, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=42):
 
     data, true_x = generate_phase_retrieval_data(d, m, seed=data_seed)
 
-    inv_betas = np.linspace(1e-4, 1.0, n_stepsizes)
+    inv_betas = np.logspace(-4, 0, n_stepsizes)
     beta_values = 1.0 / inv_betas
 
     method_classes = {
