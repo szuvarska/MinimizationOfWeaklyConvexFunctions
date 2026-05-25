@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -85,6 +86,30 @@ def run_torch_optimizer(opt_class, data, d, lr, n_epochs, m, seed, **opt_kwargs)
     return obj
 
 
+MODEL_METHODS = {
+    "Subgradient": SubgradientPhaseRetrieval,
+    "Prox-Linear": ProxLinearPhaseRetrieval,
+    "Proximal Point": ProximalPointPhaseRetrieval,
+}
+
+TORCH_OPTS = {
+    "SGD": (torch.optim.SGD, {}),
+    "Adam": (torch.optim.Adam, {}),
+    "AdaGrad": (torch.optim.Adagrad, {}),
+}
+
+
+def _worker_model(method_name, data, d, beta, n_epochs, m, seed):
+    """Worker for model-based methods."""
+    return run_model_based(MODEL_METHODS[method_name], data, d, beta, n_epochs, m, seed)
+
+
+def _worker_torch(opt_name, data, d, lr, n_epochs, m, seed):
+    """Worker for torch optimizers."""
+    opt_cls, kwargs = TORCH_OPTS[opt_name]
+    return run_torch_optimizer(opt_cls, data, d, lr, n_epochs, m, seed, **kwargs)
+
+
 def run_comparison(d, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=42):
     print(f"\n{'='*60}")
     print(f"  Optimizer Comparison: d={d}, m={m}")
@@ -93,52 +118,70 @@ def run_comparison(d, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=4
 
     data, true_x = generate_phase_retrieval_data(d, m, seed=data_seed)
 
-    # Model-based methods use inv_beta as step-size parameter
     inv_betas = np.logspace(-4, 0, n_stepsizes)
-
-    # Torch optimizers use learning rate
     lrs = np.logspace(-4, 0, n_stepsizes)
 
-    # Model-based methods
-    model_methods = {
-        "Subgradient": SubgradientPhaseRetrieval,
-        "Prox-Linear": ProxLinearPhaseRetrieval,
-        "Proximal Point": ProximalPointPhaseRetrieval,
-    }
-
-    # Torch optimizers
-    torch_opts = {
-        "SGD": (torch.optim.SGD, {}),
-        "Adam": (torch.optim.Adam, {}),
-        "AdaGrad": (torch.optim.Adagrad, {}),
-    }
-
     results = {}
+    n_workers = max(1, os.cpu_count() - 1)
 
-    # Run model-based methods
-    for name, cls in model_methods.items():
-        vals = np.zeros(n_stepsizes)
+    # Build all tasks
+    tasks_model = []
+    for name in MODEL_METHODS:
         for si, inv_beta in enumerate(inv_betas):
             beta = 1.0 / inv_beta
-            objs = []
             for r in range(n_rounds):
-                obj = run_model_based(cls, data, d, beta, n_epochs, m, seed=r)
-                objs.append(obj)
-            vals[si] = np.mean(objs)
+                tasks_model.append((si, name, beta, r))
+
+    tasks_torch = []
+    for name in TORCH_OPTS:
+        for si, lr in enumerate(lrs):
+            for r in range(n_rounds):
+                tasks_torch.append((si, name, lr, r))
+
+    total = len(tasks_model) + len(tasks_torch)
+    print(f"  Running {total} tasks on {n_workers} workers...")
+
+    done = 0
+
+    # Model-based methods
+    raw_model = {(si, name): [] for si in range(n_stepsizes) for name in MODEL_METHODS}
+    with ProcessPoolExecutor(max_workers=n_workers) as pool:
+        futures = {
+            pool.submit(_worker_model, name, data, d, beta, n_epochs, m, r): (si, name)
+            for si, name, beta, r in tasks_model
+        }
+        for future in as_completed(futures):
+            si, name = futures[future]
+            raw_model[(si, name)].append(future.result())
+            done += 1
+            if done % 100 == 0:
+                print(f"  Progress: {done}/{total} ({100*done/total:.0f}%)")
+
+    for name in MODEL_METHODS:
+        vals = np.zeros(n_stepsizes)
+        for si in range(n_stepsizes):
+            vals[si] = np.mean(raw_model[(si, name)])
         results[name] = vals
         print(f"  Done: {name}")
 
-    # Run torch optimizers
-    for name, (opt_cls, kwargs) in torch_opts.items():
+    # Torch optimizers
+    raw_torch = {(si, name): [] for si in range(n_stepsizes) for name in TORCH_OPTS}
+    with ProcessPoolExecutor(max_workers=n_workers) as pool:
+        futures = {
+            pool.submit(_worker_torch, name, data, d, lr, n_epochs, m, r): (si, name)
+            for si, name, lr, r in tasks_torch
+        }
+        for future in as_completed(futures):
+            si, name = futures[future]
+            raw_torch[(si, name)].append(future.result())
+            done += 1
+            if done % 100 == 0:
+                print(f"  Progress: {done}/{total} ({100*done/total:.0f}%)")
+
+    for name in TORCH_OPTS:
         vals = np.zeros(n_stepsizes)
-        for si, lr in enumerate(lrs):
-            objs = []
-            for r in range(n_rounds):
-                obj = run_torch_optimizer(
-                    opt_cls, data, d, lr, n_epochs, m, seed=r, **kwargs
-                )
-                objs.append(obj)
-            vals[si] = np.mean(objs)
+        for si in range(n_stepsizes):
+            vals[si] = np.mean(raw_torch[(si, name)])
         results[name] = vals
         print(f"  Done: {name}")
 
