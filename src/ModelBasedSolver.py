@@ -53,6 +53,17 @@ class ModelBasedSolver:
         }
 
     def run(self):
+        # Log the initial point before any updates
+        obj_val = self.prob.population_objective(self.x, self.data)
+        x_norm = torch.norm(self.x).item()
+        self.history["iterations"].append(-1)
+        self.history["obj_values"].append(obj_val)
+        self.history["x_norms"].append(x_norm)
+        if self.true_solution is not None:
+            dist = torch.norm(self.x - self.true_solution).item()
+            self.history["dist_to_solution"].append(dist)
+        if self.verbose:
+            print(f"Iter init: ||x|| = {x_norm:.4f} | phi(x) = {obj_val:.6f}")
 
         for t in range(self.T):
             beta_t = self.beta

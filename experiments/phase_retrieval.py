@@ -39,7 +39,7 @@ def generate_phase_retrieval_data(d, m, seed=0):
 
 
 def run_single(prob, data, d, beta, n_epochs, m, seed):
-    """Run one trial. Returns (final_obj, epoch_to_target or None)."""
+    """Run one trial. Returns (best_obj, epoch_to_target or None)."""
     torch.manual_seed(seed)
     x_init = torch.randn(d)
     x_init = x_init / torch.norm(x_init)
@@ -59,8 +59,11 @@ def run_single(prob, data, d, beta, n_epochs, m, seed):
     )
     solver.run()
 
-    final_obj = (
-        solver.history["obj_values"][-1]
+    # Report the best (minimum) objective seen during the run.
+    # This matches the paper's convergence guarantees which hold for
+    # the best iterate, not necessarily the final one.
+    best_obj = (
+        min(solver.history["obj_values"])
         if solver.history["obj_values"]
         else float("inf")
     )
@@ -72,7 +75,7 @@ def run_single(prob, data, d, beta, n_epochs, m, seed):
             epoch_to_target = idx + 1  # 1-indexed epoch
             break
 
-    return final_obj, epoch_to_target
+    return best_obj, epoch_to_target
 
 
 METHOD_CLASSES = {
