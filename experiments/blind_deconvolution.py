@@ -82,7 +82,7 @@ def run_single(prob, data, d_total, beta, n_epochs, m, seed):
             epoch_to_target = idx + 1
             break
 
-    return final_obj, epoch_to_target
+    return best_obj, epoch_to_target
 
 
 METHOD_CLASSES = {
