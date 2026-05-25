@@ -168,8 +168,8 @@ def plot_config(
     ax1.axhline(
         y=initial_error, color="blue", linestyle="--", alpha=0.5, label="Initial error"
     )
-    ax1.set_xlabel(r"$\beta^{-1}$")
-    ax1.set_ylabel("Best function value")
+    ax1.set_xlabel("Stepsize parameter")
+    ax1.set_ylabel("Function gap")
     ax1.set_title(f"$(d_1, d_2, m) = ({d1}, {d2}, {m})$")
     ax1.set_xscale("log")
     ax1.legend()
@@ -181,8 +181,8 @@ def plot_config(
         if mask.any():
             ax2.plot(inv_betas[mask], vals[mask], label=name, linewidth=1.5)
 
-    ax2.set_xlabel(r"$\beta^{-1}$")
-    ax2.set_ylabel(r"Epochs to $10^{-4}$ suboptimality")
+    ax2.set_xlabel("Stepsize parameter")
+    ax2.set_ylabel(r"# epochs")
     ax2.set_title(f"$(d_1, d_2, m) = ({d1}, {d2}, {m})$")
     ax2.set_xscale("log")
     ax2.legend()

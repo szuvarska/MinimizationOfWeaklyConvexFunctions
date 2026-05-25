@@ -59,7 +59,7 @@ def run_model_based(method_cls, data, d, beta, n_epochs, m, seed):
 
 
 def run_torch_optimizer(opt_class, data, d, lr, n_epochs, m, seed, **opt_kwargs):
-    """Run a torch optimizer on the phase retrieval loss. Returns final population objective."""
+    """Run a torch optimizer on the phase retrieval loss. Returns best population objective."""
     torch.manual_seed(seed)
     x = torch.randn(d)
     x = x / torch.norm(x)
@@ -69,6 +69,10 @@ def run_torch_optimizer(opt_class, data, d, lr, n_epochs, m, seed, **opt_kwargs)
 
     a_all = data[:, :-1]
     b_all = data[:, -1]
+
+    # Initial objective
+    with torch.no_grad():
+        best_obj = torch.mean(torch.abs((a_all @ x) ** 2 - b_all)).item()
 
     for epoch in range(n_epochs):
         perm = torch.randperm(m)
@@ -81,9 +85,12 @@ def run_torch_optimizer(opt_class, data, d, lr, n_epochs, m, seed, **opt_kwargs)
             loss.backward()
             optimizer.step()
 
-    with torch.no_grad():
-        obj = torch.mean(torch.abs((a_all @ x) ** 2 - b_all)).item()
-    return obj
+        with torch.no_grad():
+            obj = torch.mean(torch.abs((a_all @ x) ** 2 - b_all)).item()
+            if obj < best_obj:
+                best_obj = obj
+
+    return best_obj
 
 
 MODEL_METHODS = {
@@ -208,10 +215,9 @@ def plot_comparison(d, m, lrs, results, initial_error, save_dir):
     ax.axhline(
         y=initial_error, color="gray", linestyle=":", alpha=0.5, label="Initial error"
     )
-    ax.set_xlabel("Step-size parameter")
-    ax.set_ylabel("Function value after 100 epochs")
+    ax.set_xlabel("Stepsize parameter")
+    ax.set_ylabel("Function gap")
     ax.set_title(f"Model-based vs Standard Optimizers — (d, m) = ({d}, {m})")
-    ax.set_yscale("log")
     ax.set_xscale("log")
     ax.legend(ncol=2)
     ax.grid(True, alpha=0.3)
@@ -233,10 +239,14 @@ def main():
 
         data, _ = generate_phase_retrieval_data(d, m, seed=42)
         prob = SubgradientPhaseRetrieval(rho=2.0)
-        torch.manual_seed(0)
-        x0 = torch.randn(d)
-        x0 = x0 / torch.norm(x0)
-        initial_error = prob.population_objective(x0, data)
+        n_rounds = 15
+        initial_errors = []
+        for r in range(n_rounds):
+            torch.manual_seed(r)
+            x0 = torch.randn(d)
+            x0 = x0 / torch.norm(x0)
+            initial_errors.append(prob.population_objective(x0, data))
+        initial_error = np.mean(initial_errors)
 
         plot_comparison(d, m, lrs, results, initial_error, save_dir)
 
