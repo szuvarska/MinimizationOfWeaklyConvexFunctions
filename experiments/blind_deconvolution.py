@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -84,6 +85,19 @@ def run_single(prob, data, d_total, beta, n_epochs, m, seed):
     return final_obj, epoch_to_target
 
 
+METHOD_CLASSES = {
+    "Subgradient": BlindDeconvSubgradient,
+    "Prox-Linear": BlindDeconvProxLinear,
+    "Proximal Point": BlindDeconvProximalPoint,
+}
+
+
+def _worker(method_name, d1, data, d_total, beta, n_epochs, m, seed):
+    """Top-level worker for multiprocessing (must be picklable)."""
+    prob = METHOD_CLASSES[method_name](d1=d1, rho=2.0)
+    return run_single(prob, data, d_total, beta, n_epochs, m, seed)
+
+
 def run_config(d1, d2, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=42):
     print(f"\n{'='*60}")
     print(f"  Blind Deconvolution: d1={d1}, d2={d2}, m={m}")
@@ -96,37 +110,49 @@ def run_config(d1, d2, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=
     inv_betas = np.logspace(-4, 0, n_stepsizes)
     beta_values = 1.0 / inv_betas
 
-    method_classes = {
-        "Subgradient": BlindDeconvSubgradient,
-        "Prox-Linear": BlindDeconvProxLinear,
-        "Proximal Point": BlindDeconvProximalPoint,
-    }
+    final_objs = {name: np.zeros(n_stepsizes) for name in METHOD_CLASSES}
+    epochs_to_target = {name: np.full(n_stepsizes, np.nan) for name in METHOD_CLASSES}
 
-    final_objs = {name: np.zeros(n_stepsizes) for name in method_classes}
-    epochs_to_target = {name: np.full(n_stepsizes, np.nan) for name in method_classes}
-
-    total = n_stepsizes * len(method_classes)
-    count = 0
-
+    tasks = []
     for si, beta in enumerate(beta_values):
-        for name, cls in method_classes.items():
-            prob = cls(d1=d1, rho=2.0)
-            objs = []
-            epochs = []
-
+        for name in METHOD_CLASSES:
             for r in range(n_rounds):
-                obj, epoch = run_single(prob, data, d_total, beta, n_epochs, m, seed=r)
-                objs.append(obj)
-                if epoch is not None:
-                    epochs.append(epoch)
+                tasks.append((si, name, beta, r))
 
+    total = len(tasks)
+    n_workers = max(1, os.cpu_count() - 1)
+    print(f"  Running {total} tasks on {n_workers} workers...")
+
+    done = 0
+    with ProcessPoolExecutor(max_workers=n_workers) as pool:
+        futures = {
+            pool.submit(_worker, name, d1, data, d_total, beta, n_epochs, m, r): (
+                si,
+                name,
+                r,
+            )
+            for si, name, beta, r in tasks
+        }
+
+        raw = {
+            (si, name): ([], []) for si in range(n_stepsizes) for name in METHOD_CLASSES
+        }
+        for future in as_completed(futures):
+            si, name, r = futures[future]
+            obj, epoch = future.result()
+            raw[(si, name)][0].append(obj)
+            if epoch is not None:
+                raw[(si, name)][1].append(epoch)
+            done += 1
+            if done % 100 == 0:
+                print(f"  Progress: {done}/{total} ({100*done/total:.0f}%)")
+
+    for si in range(n_stepsizes):
+        for name in METHOD_CLASSES:
+            objs, epochs = raw[(si, name)]
             final_objs[name][si] = np.mean(objs)
             if epochs:
                 epochs_to_target[name][si] = np.mean(epochs)
-
-            count += 1
-            if count % 10 == 0:
-                print(f"  Progress: {count}/{total} ({100*count/total:.0f}%)")
 
     return inv_betas, final_objs, epochs_to_target
 

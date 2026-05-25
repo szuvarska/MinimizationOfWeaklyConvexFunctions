@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -61,6 +62,19 @@ def run_single(prob, data, d, beta, n_epochs, m, moreau_epoch_interval, seed):
     return solver.history
 
 
+METHOD_CLASSES = {
+    "Subgradient": SubgradientPhaseRetrieval,
+    "Prox-Linear": ProxLinearPhaseRetrieval,
+    "Proximal Point": ProximalPointPhaseRetrieval,
+}
+
+
+def _worker(method_name, data, d, beta, n_epochs, m, moreau_epoch_interval, seed):
+    """Top-level worker for multiprocessing."""
+    prob = METHOD_CLASSES[method_name](rho=2.0)
+    return run_single(prob, data, d, beta, n_epochs, m, moreau_epoch_interval, seed)
+
+
 def run_moreau_experiment(
     d=50,
     m=150,
@@ -81,40 +95,44 @@ def run_moreau_experiment(
     data, true_x = generate_phase_retrieval_data(d, m, seed=data_seed)
     beta = 1.0 / beta_inv
 
-    method_classes = {
-        "Subgradient": SubgradientPhaseRetrieval,
-        "Prox-Linear": ProxLinearPhaseRetrieval,
-        "Proximal Point": ProximalPointPhaseRetrieval,
-    }
+    # Build tasks: (method_name, round)
+    tasks = []
+    for name in METHOD_CLASSES:
+        for r in range(n_rounds):
+            tasks.append((name, r))
+
+    n_workers = max(1, os.cpu_count() - 1)
+    print(f"  Running {len(tasks)} tasks on {n_workers} workers...")
+
+    raw = {name: [] for name in METHOD_CLASSES}
+    done = 0
+    with ProcessPoolExecutor(max_workers=n_workers) as pool:
+        futures = {
+            pool.submit(
+                _worker, name, data, d, beta, n_epochs, m, moreau_epoch_interval, r
+            ): (name, r)
+            for name, r in tasks
+        }
+        for future in as_completed(futures):
+            name, r = futures[future]
+            raw[name].append(future.result())
+            done += 1
+            print(f"  {name} round {r+1}/{n_rounds} done ({done}/{len(tasks)})")
 
     results = {}
-
-    for name, cls in method_classes.items():
-        prob = cls(rho=2.0)
+    for name in METHOD_CLASSES:
+        histories = raw[name]
         all_moreau = []
         all_obj = []
+        moreau_epochs = None
 
-        for r in range(n_rounds):
-            history = run_single(
-                prob,
-                data,
-                d,
-                beta,
-                n_epochs,
-                m,
-                moreau_epoch_interval,
-                seed=r,
-            )
-            # moreau_grad_norms is list of (iteration, value) tuples
+        for history in histories:
             moreau_pairs = history["moreau_grad_norms"]
             moreau_epochs = [it / m for it, _ in moreau_pairs]
             moreau_vals = [val for _, val in moreau_pairs]
             all_moreau.append(moreau_vals)
-
             all_obj.append(history["obj_values"])
-            print(f"  {name} round {r+1}/{n_rounds} done")
 
-        # Average over rounds (trim to shortest)
         min_len_m = min(len(x) for x in all_moreau)
         avg_moreau = np.mean([x[:min_len_m] for x in all_moreau], axis=0)
 
