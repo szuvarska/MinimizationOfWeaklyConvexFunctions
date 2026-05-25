@@ -160,9 +160,8 @@ def plot_config(d, m, inv_betas, final_objs, epochs_to_target, initial_error, sa
         y=initial_error, color="blue", linestyle="--", alpha=0.5, label="Initial error"
     )
     ax1.set_xlabel(r"$\beta^{-1}$")
-    ax1.set_ylabel("Function value after 100 epochs")
+    ax1.set_ylabel("Best function value")
     ax1.set_title(f"(d, m) = ({d}, {m})")
-    ax1.set_yscale("log")
     ax1.set_xscale("log")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
@@ -196,13 +195,17 @@ def main():
     for d, m in configs:
         inv_betas, final_objs, epochs_to_target = run_config(d, m)
 
-        # Compute initial error for the dashed line
+        # Compute initial error averaged over the same rounds used in run_config
         data, _ = generate_phase_retrieval_data(d, m, seed=42)
         prob = SubgradientPhaseRetrieval(rho=2.0)
-        torch.manual_seed(0)
-        x0 = torch.randn(d)
-        x0 = x0 / torch.norm(x0)
-        initial_error = prob.population_objective(x0, data)
+        n_rounds = 15
+        initial_errors = []
+        for r in range(n_rounds):
+            torch.manual_seed(r)
+            x0 = torch.randn(d)
+            x0 = x0 / torch.norm(x0)
+            initial_errors.append(prob.population_objective(x0, data))
+        initial_error = np.mean(initial_errors)
 
         plot_config(
             d, m, inv_betas, final_objs, epochs_to_target, initial_error, save_dir

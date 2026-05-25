@@ -169,9 +169,8 @@ def plot_config(
         y=initial_error, color="blue", linestyle="--", alpha=0.5, label="Initial error"
     )
     ax1.set_xlabel(r"$\beta^{-1}$")
-    ax1.set_ylabel("Function value after 100 epochs")
+    ax1.set_ylabel("Best function value")
     ax1.set_title(f"$(d_1, d_2, m) = ({d1}, {d2}, {m})$")
-    ax1.set_yscale("log")
     ax1.set_xscale("log")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
@@ -207,10 +206,14 @@ def main():
         data, _ = generate_blind_deconv_data(d1, d2, m, seed=42)
         prob = BlindDeconvSubgradient(d1=d1, rho=2.0)
         d_total = d1 + d2
-        torch.manual_seed(0)
-        z0 = torch.randn(d_total)
-        z0 = z0 / torch.norm(z0)
-        initial_error = prob.population_objective(z0, data)
+        n_rounds = 15
+        initial_errors = []
+        for r in range(n_rounds):
+            torch.manual_seed(r)
+            z0 = torch.randn(d_total)
+            z0 = z0 / torch.norm(z0)
+            initial_errors.append(prob.population_objective(z0, data))
+        initial_error = np.mean(initial_errors)
 
         plot_config(
             d1, d2, m, inv_betas, final_objs, epochs_to_target, initial_error, save_dir
