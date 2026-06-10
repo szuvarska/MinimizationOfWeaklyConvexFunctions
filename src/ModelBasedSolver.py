@@ -25,6 +25,9 @@ class ModelBasedSolver:
         moreau_every=None,
         verbose=True,
         true_solution=None,
+        tol=None,
+        patience=1,
+        stop_measure="none",
     ):
         self.prob = problem
         self.data = data
@@ -36,8 +39,21 @@ class ModelBasedSolver:
         self.verbose = verbose
         self.true_solution = true_solution
 
+        # Optional early stopping based on a stationarity measure.
+        #   stop_measure="moreau":    ||grad phi_lambda(x)|| (expensive, full-batch prox)
+        #   stop_measure="prox_step": beta * ||x_{t+1} - x_t||  (cheap proxy)
+        #   stop_measure="none":      disabled (default; existing experiments unaffected)
+        # Stop once the measure stays <= tol for `patience` consecutive checks.
+        self.tol = tol
+        self.patience = patience
+        self.stop_measure = stop_measure
+        self.stop_iter = None
+        self._below_count = 0
+
         # β must satisfy β > ρ (paper: β > ρ̄ > τ+η).
         # Default: β = 2ρ + 1, safely above ρ.
+        # `beta` may also be a callable beta(t) to use a stepsize schedule
+        # beta_t (the paper's control sequence alpha_t = 1/beta_t).
         if beta is None:
             self.beta = 2.0 * self.prob.rho + 1.0
         else:
@@ -50,6 +66,7 @@ class ModelBasedSolver:
             "moreau_grad_norms": [],
             "x_norms": [],
             "dist_to_solution": [],
+            "step_norms": [],
         }
 
     def run(self):
@@ -66,7 +83,8 @@ class ModelBasedSolver:
             print(f"Iter init: ||x|| = {x_norm:.4f} | phi(x) = {obj_val:.6f}")
 
         for t in range(self.T):
-            beta_t = self.beta
+            beta_t = self.beta(t) if callable(self.beta) else self.beta
+            x_prev = self.x.clone().detach()
 
             indices = torch.randint(0, len(self.data), (self.batch_size,))
             batch = self.data[indices]
@@ -95,6 +113,8 @@ class ModelBasedSolver:
                 inner_opt.step(closure)
                 self.x = y.detach().clone()
 
+            step_norm = torch.norm(self.x - x_prev).item()
+
             # Logging
             if t % self.log_every == 0:
                 obj_val = self.prob.population_objective(self.x, self.data)
@@ -103,6 +123,7 @@ class ModelBasedSolver:
                 self.history["iterations"].append(t)
                 self.history["obj_values"].append(obj_val)
                 self.history["x_norms"].append(x_norm)
+                self.history["step_norms"].append((t, step_norm))
 
                 if self.true_solution is not None:
                     dist = torch.norm(self.x - self.true_solution).item()
@@ -119,4 +140,27 @@ class ModelBasedSolver:
                         f"phi(x) = {obj_val:.6f}"
                     )
 
+                # Optional early stopping on a stationarity measure
+                if self.stop_measure != "none" and self.tol is not None:
+                    if self._check_stop(beta_t, step_norm):
+                        self.stop_iter = t
+                        if self.verbose:
+                            print(f"Early stop at iter {t} ({self.stop_measure}).")
+                        break
+
         return self.x
+
+    def _check_stop(self, beta_t, step_norm):
+        """Return True once the stop measure stays <= tol for `patience` checks."""
+        if self.stop_measure == "prox_step":
+            value = beta_t * step_norm
+        elif self.stop_measure == "moreau":
+            value = self.prob.compute_moreau_grad_norm(self.x, self.data)
+        else:
+            return False
+
+        if value <= self.tol:
+            self._below_count += 1
+        else:
+            self._below_count = 0
+        return self._below_count >= self.patience
