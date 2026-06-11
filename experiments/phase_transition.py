@@ -113,7 +113,7 @@ def main():
     save_dir = os.path.join(os.path.dirname(__file__), "..", "deliverables", "figures")
     d = 50
     ratios = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0]
-    beta_inv = 0.1
+    beta_inv = 0.001
     n_epochs, n_trials = 200, 50
 
     ratios_arr, results = run_phase_transition(d, ratios, beta_inv, n_epochs, n_trials)

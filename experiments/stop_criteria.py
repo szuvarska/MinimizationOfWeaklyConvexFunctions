@@ -168,7 +168,7 @@ def main():
     d, m = 50, 150
     beta_inv = 0.1
     n_epochs, n_rounds = 120, 5
-    eps = {"Moreau": 0.05, "Gap (oracle)": 1e-3, "Stagnation": 1e-3}
+    eps = {"Moreau": 0.1, "Gap (oracle)": 1e-3, "Stagnation": 1e-3}
 
     epochs, obj, moreau, step, data, beta = run_trajectories(
         d, m, beta_inv, n_epochs, n_rounds

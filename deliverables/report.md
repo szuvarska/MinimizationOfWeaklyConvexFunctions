@@ -177,48 +177,6 @@ measure and the object we track throughout. We use $\lambda = 1/(2\rho)$.
 - **Expected results.** The A2 log-log slope is close to $-1/4$; prox-linear and
   proximal-point sit on a lower constant than the subgradient method.
 
-#### Experiment 6 (B) — Sparse phase retrieval with an $\ell_1$ prior
-
-- **Why.** Every reproduction experiment uses $r \equiv 0$. This experiment
-  exercises the regularizer term: with a sparse target, an $\ell_1$ prior (applied
-  through the proximal/soft-threshold step) should recover the signal from fewer
-  measurements.
-- **Setup.** $k$-sparse target, $d=200$, $k=10$; sweep the oversampling ratio
-  $m/d$; compare $\ell_1$-regularized subgradient against the unregularized
-  baseline; shared spectral initialization for fairness.
-- **Details.** Recovery measured with the sign-invariant distance; a second panel
-  shows convergence at a fixed ratio.
-- **Expected results.** The $\ell_1$ method achieves successful recovery at a
-  smaller $m/d$ than the dense, unregularized baseline.
-
-#### Experiment 7 (C) — Convex vs strongly convex rates
-
-- **Why.** The paper proves *improved* complexity when the model is convex
-  ($\tau=0$) and again when $\varphi$ is strongly convex. We verify both faster
-  rates on a clean convex-composite problem.
-- **Setup.** Robust linear regression $\varphi(x) = \mathbb{E}\,\lvert\langle a,x
-  \rangle - b\rvert\;(+\tfrac{\mu}{2}\lVert x\rVert^2)$, $(d,m)=(10,200)$.
-  Convex case $\mu=0$ with $\beta_t \propto \sqrt{t}$; strongly convex case
-  $\mu>0$ with $\beta_t = \mu t$.
-- **Details.** The population optimum $\varphi^\star$ is computed once by LBFGS to
-  form the function gap; we plot the running-min gap log-log.
-- **Expected results.** The convex curve follows a reference slope of $-1/2$ and
-  the strongly convex curve a slope of $-1$.
-
-#### Experiment 8 (D) — Robustness to outliers
-
-- **Why.** Weak convexity is what lets *robust* (nonsmooth $\ell_1$-type) losses
-  tolerate gross corruption. We contrast the robust phase-retrieval loss against
-  the smooth $\ell_2$ loss as measurements are corrupted.
-- **Setup.** Phase retrieval $(d,m)=(50,300)$; corrupt a fraction $p \in
-  \{0,0.05,0.1,0.2,0.3\}$ of the measurements with large outliers. Robust $\ell_1$
-  loss solved by the proximal-point method; smooth $\ell_2$ loss
-  $(\langle a,x\rangle^2 - b)^2$ minimized with Adam. Shared spectral
-  initialization isolates loss robustness from initialization effects.
-- **Details.** For each method and $p$ we sweep a few step-sizes and report the
-  best sign-invariant recovery error, averaged over rounds.
-- **Expected results.** The $\ell_1$ method's error stays low and roughly flat in
-  $p$; the $\ell_2$ baseline degrades sharply as the outlier fraction grows.
 
 #### Experiment 9 (E) — Statistical phase transition
 
