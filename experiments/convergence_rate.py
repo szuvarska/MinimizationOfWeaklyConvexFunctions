@@ -196,7 +196,7 @@ def main():
     save_dir = os.path.join(os.path.dirname(__file__), "..", "deliverables", "figures")
     d, m = 50, 150
 
-    a1 = run_a1(d, m, beta_inv=0.01, T=30000, moreau_samples=40, n_rounds=10)
+    a1 = run_a1(d, m, beta_inv=0.01, T=30000, moreau_samples=40, n_rounds=20)
     horizons = [300, 1000, 3000, 10000, 30000]
     hz, a2 = run_a2(d, m, horizons, beta_scale=2, moreau_samples=30, n_rounds=10)
     plot_rate(a1, hz, a2, d, m, save_dir)
