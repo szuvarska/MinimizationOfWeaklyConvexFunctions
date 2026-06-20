@@ -36,6 +36,18 @@ def generate_phase_retrieval_data(d, m, seed=0):
     return population_data, true_x
 
 
+def make_decreasing_beta(beta_0, rho, m):
+    """Create a decreasing beta schedule: beta_t = rho + (beta_0 - rho) / sqrt(1 + t/m).
+
+    This decays at O(1/sqrt(epoch)) rate while maintaining beta_t > rho.
+    """
+
+    def beta_schedule(t):
+        return rho + (beta_0 - rho) / np.sqrt(1 + t / m)
+
+    return beta_schedule
+
+
 def run_single(prob, data, d, beta, n_epochs, m, moreau_epoch_interval, seed):
     """Run one trial, tracking Moreau gradient norm at regular epoch intervals."""
     torch.manual_seed(seed)
@@ -69,9 +81,10 @@ METHOD_CLASSES = {
 }
 
 
-def _worker(method_name, data, d, beta, n_epochs, m, moreau_epoch_interval, seed):
+def _worker(method_name, data, d, beta_0, rho, n_epochs, m, moreau_epoch_interval, seed):
     """Top-level worker for multiprocessing."""
-    prob = METHOD_CLASSES[method_name](rho=2.0)
+    prob = METHOD_CLASSES[method_name](rho=rho)
+    beta = make_decreasing_beta(beta_0, rho, m)
     return run_single(prob, data, d, beta, n_epochs, m, moreau_epoch_interval, seed)
 
 
@@ -93,7 +106,8 @@ def run_moreau_experiment(
     print(f"{'='*60}")
 
     data, true_x = generate_phase_retrieval_data(d, m, seed=data_seed)
-    beta = 1.0 / beta_inv
+    beta_0 = 1.0 / beta_inv
+    rho = 2.0  # must match the rho used in problem construction
 
     # Build tasks: (method_name, round)
     tasks = []
@@ -109,7 +123,7 @@ def run_moreau_experiment(
     with ProcessPoolExecutor(max_workers=n_workers) as pool:
         futures = {
             pool.submit(
-                _worker, name, data, d, beta, n_epochs, m, moreau_epoch_interval, r
+                _worker, name, data, d, beta_0, rho, n_epochs, m, moreau_epoch_interval, r
             ): (name, r)
             for name, r in tasks
         }
