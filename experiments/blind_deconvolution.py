@@ -91,10 +91,33 @@ METHOD_CLASSES = {
     "Proximal Point": BlindDeconvProximalPoint,
 }
 
+# Per-method multipliers for beta_0.  Subgradient uses a rough model and
+# benefits from stronger regularization; Proximal Point uses the exact
+# objective and can afford a smaller beta (larger steps).
+METHOD_BETA_MULTIPLIERS = {
+    "Subgradient": 20.0,
+    "Prox-Linear": 1.0,
+    "Proximal Point": 0.5,
+}
 
-def _worker(method_name, d1, data, d_total, beta, n_epochs, m, seed):
+
+def make_decreasing_beta(beta_0, rho, m):
+    """Create a decreasing beta schedule: beta_t = rho + (beta_0 - rho) / sqrt(1 + t/m).
+
+    This decays at O(1/sqrt(epoch)) rate while maintaining beta_t > rho.
+    """
+
+    def beta_schedule(t):
+        return rho + (beta_0 - rho) / np.sqrt(1 + t / m)
+
+    return beta_schedule
+
+
+def _worker(method_name, d1, data, d_total, beta_0, rho, n_epochs, m, seed):
     """Top-level worker for multiprocessing (must be picklable)."""
-    prob = METHOD_CLASSES[method_name](d1=d1, rho=2.0)
+    prob = METHOD_CLASSES[method_name](d1=d1, rho=rho)
+    method_beta_0 = beta_0 * METHOD_BETA_MULTIPLIERS[method_name]
+    beta = make_decreasing_beta(method_beta_0, rho, m)
     return run_single(prob, data, d_total, beta, n_epochs, m, seed)
 
 
@@ -106,6 +129,7 @@ def run_config(d1, d2, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=
 
     data, true_z = generate_blind_deconv_data(d1, d2, m, seed=data_seed)
     d_total = d1 + d2
+    rho = 2.0
 
     inv_betas = np.logspace(-4, 0, n_stepsizes)
     beta_values = 1.0 / inv_betas
@@ -114,10 +138,10 @@ def run_config(d1, d2, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=
     epochs_to_target = {name: np.full(n_stepsizes, np.nan) for name in METHOD_CLASSES}
 
     tasks = []
-    for si, beta in enumerate(beta_values):
+    for si, beta_0 in enumerate(beta_values):
         for name in METHOD_CLASSES:
             for r in range(n_rounds):
-                tasks.append((si, name, beta, r))
+                tasks.append((si, name, beta_0, r))
 
     total = len(tasks)
     n_workers = max(1, os.cpu_count() - 1)
@@ -126,12 +150,12 @@ def run_config(d1, d2, m, n_stepsizes=100, n_epochs=100, n_rounds=15, data_seed=
     done = 0
     with ProcessPoolExecutor(max_workers=n_workers) as pool:
         futures = {
-            pool.submit(_worker, name, d1, data, d_total, beta, n_epochs, m, r): (
+            pool.submit(_worker, name, d1, data, d_total, beta_0, rho, n_epochs, m, r): (
                 si,
                 name,
                 r,
             )
-            for si, name, beta, r in tasks
+            for si, name, beta_0, r in tasks
         }
 
         raw = {
@@ -168,7 +192,7 @@ def plot_config(
     ax1.axhline(
         y=initial_error, color="blue", linestyle="--", alpha=0.5, label="Initial error"
     )
-    ax1.set_xlabel("Stepsize parameter")
+    ax1.set_xlabel(r"Initial stepsize parameter $\beta_0^{-1}$")
     ax1.set_ylabel("Function gap")
     ax1.set_title(f"$(d_1, d_2, m) = ({d1}, {d2}, {m})$")
     ax1.set_xscale("log")
@@ -181,7 +205,7 @@ def plot_config(
         if mask.any():
             ax2.plot(inv_betas[mask], vals[mask], label=name, linewidth=1.5)
 
-    ax2.set_xlabel("Stepsize parameter")
+    ax2.set_xlabel(r"Initial stepsize parameter $\beta_0^{-1}$")
     ax2.set_ylabel(r"# epochs")
     ax2.set_title(f"$(d_1, d_2, m) = ({d1}, {d2}, {m})$")
     ax2.set_xscale("log")
