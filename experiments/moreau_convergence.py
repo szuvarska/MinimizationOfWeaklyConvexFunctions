@@ -80,11 +80,21 @@ METHOD_CLASSES = {
     "Proximal Point": ProximalPointPhaseRetrieval,
 }
 
+# Per-method multipliers for beta_0.  Subgradient uses a rough model and
+# benefits from stronger regularization; Proximal Point uses the exact
+# objective and can afford a smaller beta (larger steps).
+METHOD_BETA_MULTIPLIERS = {
+    "Subgradient": 20.0,
+    "Prox-Linear": 1.0,
+    "Proximal Point": 0.5,
+}
+
 
 def _worker(method_name, data, d, beta_0, rho, n_epochs, m, moreau_epoch_interval, seed):
     """Top-level worker for multiprocessing."""
     prob = METHOD_CLASSES[method_name](rho=rho)
-    beta = make_decreasing_beta(beta_0, rho, m)
+    method_beta_0 = beta_0 * METHOD_BETA_MULTIPLIERS[method_name]
+    beta = make_decreasing_beta(method_beta_0, rho, m)
     return run_single(prob, data, d, beta, n_epochs, m, moreau_epoch_interval, seed)
 
 
@@ -103,11 +113,13 @@ def run_moreau_experiment(
     print(
         f"  {n_epochs} epochs, Moreau every {moreau_epoch_interval} epochs, {n_rounds} rounds"
     )
+    for name, mult in METHOD_BETA_MULTIPLIERS.items():
+        print(f"    {name}: β₀ = {1.0 / beta_inv * mult:.1f}")
     print(f"{'='*60}")
 
     data, true_x = generate_phase_retrieval_data(d, m, seed=data_seed)
     beta_0 = 1.0 / beta_inv
-    rho = 2.0  # must match the rho used in problem construction
+    rho = 0.05  # must match the rho used in problem construction
 
     # Build tasks: (method_name, round)
     tasks = []
@@ -180,8 +192,7 @@ def plot_moreau_convergence(results, d, m, beta_inv, save_dir):
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel(r"$\|\nabla \varphi_\lambda(x_t)\|$")
     ax1.set_title(
-        f"Moreau envelope gradient — (d, m) = ({d}, {m}), "
-        r"$\beta^{-1}$" + f" = {beta_inv}"
+        f"Moreau envelope gradient — (d, m) = ({d}, {m}), decreasing " r"$\beta_t$"
     )
     ax1.set_yscale("log")
     ax1.legend()
@@ -194,7 +205,7 @@ def plot_moreau_convergence(results, d, m, beta_inv, save_dir):
     ax2.set_xlabel("Epoch")
     ax2.set_ylabel(r"$\varphi(x_t)$")
     ax2.set_title(
-        f"Objective value — (d, m) = ({d}, {m}), " r"$\beta^{-1}$" + f" = {beta_inv}"
+        f"Objective value — (d, m) = ({d}, {m}), decreasing " r"$\beta_t$"
     )
     ax2.set_yscale("log")
     ax2.legend()
@@ -212,9 +223,9 @@ def main():
     save_dir = os.path.join(os.path.dirname(__file__), "..", "deliverables", "figures")
 
     configs = [
-        {"d": 10, "m": 30, "beta_inv": 0.1},
-        {"d": 50, "m": 150, "beta_inv": 0.1},
-        {"d": 100, "m": 300, "beta_inv": 0.1},
+        {"d": 10, "m": 30, "beta_inv": 0.01},
+        {"d": 50, "m": 150, "beta_inv": 0.01},
+        {"d": 100, "m": 300, "beta_inv": 0.01},
     ]
 
     for cfg in configs:
